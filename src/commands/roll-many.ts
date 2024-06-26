@@ -18,7 +18,7 @@ const getCards = async () => {
 
 // }
 
-export const data = new SlashCommandBuilder().setName('spin').setDescription('Get a random card!');
+export const data = new SlashCommandBuilder().setName('roll').setDescription('Get a random card!');
 
 export async function execute(interaction: CommandInteraction) {
     await interaction.reply(Math.random() > 0.5 ? 'Charizard' : 'Giratina');

@@ -22,7 +22,7 @@ const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN);
 (async () => {
     try {
         console.log(`Started refreshing ${commands.length} application (/) commands.`);
-
+        console.log(commands);
         // The put method is used to fully refresh all commands in the guild with the current set
         // Perhaps we need to have a list of all the guilds
         const data = await rest.put(

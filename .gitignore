@@ -131,3 +131,6 @@ dist
 
 # Typescript Build
 build/
+
+# Authorization
+auth/

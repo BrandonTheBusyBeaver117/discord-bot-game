@@ -2,12 +2,25 @@ import { Client } from 'discord.js';
 import config from './config';
 import * as commandModules from './commands';
 
+import mongoConfig from './mongoconfig';
+import { connect } from 'mongoose';
+
 const commands = Object(commandModules);
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });
 
-client.once('ready', (readyClient) => {
+client.once('ready', async (readyClient) => {
     console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+
+    if (!mongoConfig.MONGODB_URL) return;
+
+    await connect(mongoConfig.MONGODB_URL || '');
+
+    if (connect) {
+        console.log('connected to db');
+    } else {
+        console.log('failed to connect to db');
+    }
 });
 
 client.on('interactionCreate', async (interaction) => {

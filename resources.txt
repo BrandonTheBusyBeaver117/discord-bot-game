@@ -1,0 +1,16 @@
+
+setting up w/ discord commands (optional?)
+https://www.youtube.com/watch?v=nv38zCeFBHg
+
+
+nosql basics:
+https://www.youtube.com/watch?v=0buKQHokLK8
+
+Actual mongodb basics
+https://www.youtube.com/watch?v=ofme2o29ngU
+
+using the mongoose wrapper
+https://www.youtube.com/watch?v=DZBGEVgL2eE
+
+mongoose docs (ts schemas)
+https://mongoosejs.com/docs/typescript/schemas.html

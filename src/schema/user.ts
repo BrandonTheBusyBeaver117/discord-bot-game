@@ -9,7 +9,7 @@ const userSchema = model(
     'userSchema873478912',
     new Schema({
         uuid: { type: String, required: true },
-        inventory: { type: String, required: true },
+        inventory: [{ type: String, required: true }],
     }),
 );
 

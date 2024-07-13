@@ -2,7 +2,7 @@ import { Client } from 'discord.js';
 import config from './config';
 import * as commandModules from './commands';
 
-import mongoConfig from './mongoconfig';
+import mongoConfig from './mongoConfig';
 import { connect } from 'mongoose';
 
 const commands = Object(commandModules);
@@ -14,12 +14,18 @@ client.once('ready', async (readyClient) => {
 
     if (!mongoConfig.MONGODB_URL) return;
 
-    await connect(mongoConfig.MONGODB_URL || '');
+    try {
+        await connect(mongoConfig.MONGODB_URL);
 
-    if (connect) {
-        console.log('connected to db');
-    } else {
-        console.log('failed to connect to db');
+        if (connect) {
+            console.log('connected to db');
+        } else {
+            console.log('failed to connect to db');
+        }
+        console.log(`Both db and bot is up and running!`);
+    } catch (err) {
+        console.log('MongoDB connection error. Please make sure MongoDB is running. ' + err);
+        process.exit();
     }
 });
 
@@ -36,7 +42,7 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
-        commands[commandName].execute(interaction, client);
+        command.execute(interaction, client);
     } catch (error) {
         console.error(error);
         if (interaction.replied || interaction.deferred) {

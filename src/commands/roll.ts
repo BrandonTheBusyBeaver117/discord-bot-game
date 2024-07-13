@@ -12,10 +12,21 @@ export async function execute(interaction: CommandInteraction) {
 
     const character = banner.getCard().name;
 
-    await userSchema.findOneAndUpdate({uuid: interaction.user.id}, {
+    const userExists = await userSchema.exists({ uuid: interaction.user.id });
 
-    })
+    if (userExists) {
+        await userSchema.updateOne(
+            { uuid: interaction.user.id },
+            {
+                $addToSet: { inventory: character },
+            },
+        );
+    } else {
+        await userSchema.create({
+            uuid: interaction.user.id,
+            inventory: [character],
+        });
+    }
 
-
-    await interaction.reply(banner.getCard().name);
+    await interaction.reply(character);
 }

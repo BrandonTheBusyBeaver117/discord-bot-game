@@ -10,6 +10,8 @@ const userSchema = model(
     new Schema({
         uuid: { type: String, required: true },
         inventory: [{ type: String, required: true }],
+        gems: { type: Number, required: true },
+        daily_timestamp: { type: Date, required: true },
     }),
 );
 

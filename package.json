@@ -9,7 +9,8 @@
         "deploy-commands": "npm run build && node build/deploy-commands",
         "dev": "npm run build && nodemon build/index.js",
         "build": "tsc",
-        "pretty": "prettier --write \"./**/*.{ts}\""
+        "pretty": "prettier --write \"./**/*.{ts}\"",
+        "update-db": "npm run build && node build/update-mongo.js"
     },
     "author": "busybeaver",
     "license": "ISC",

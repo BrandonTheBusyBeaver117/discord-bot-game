@@ -1,34 +1,44 @@
-import fs from 'fs';
-import path from 'path';
-import Papa from 'papaparse';
-import Characters from './generators/generateCharacters';
+// import fs from 'fs';
+// import path from 'path';
+// import DiscordCommand from './commands/generic_discord_command';
+// async function getCommands() {
+//     // Only goes one folder deep
+//     const commands = [];
+//     const commandsPath = path.join(__dirname, 'commands');
+//     const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
+//     for (const file of commandFiles) {
+//         const filePath = path.join(commandsPath, file);
 
-console.log(Characters);
-const getRandomCards = (arr: string[], numElements: number) => {
-    const elements = [];
+import { getCommandMappings } from './getCommands';
 
-    console.log(arr);
+//         const module = await import(filePath);
 
-    for (let i = 0; i < numElements; i++) {
-        const randomElementIndex = Math.floor(Math.random() * elements.length);
+//         const CommandClass = module.default;
 
-        elements.push(...arr.splice(randomElementIndex, 1));
-    }
+//         const config: Record<string, DiscordCommand> = {};
 
-    console.log(elements);
-    console.log(elements.map((charName) => ({ name: charName })));
-    return elements.map((charName) => ({ name: charName }));
-};
+//         if (typeof CommandClass === 'function') {
+//             const commandInstance = new CommandClass();
 
-console.log('buh?');
-const randomBannerConfig = {
-    name: 'Random',
-    common: getRandomCards(Characters.common, 4),
-    rare: getRandomCards(Characters.rare, 3),
-    epic: getRandomCards(Characters.epic, 2),
-    legendary: getRandomCards(Characters.legendary, 1),
-};
+//             config['aa'] = commandInstance;
 
-fs.writeFile('./data/random_banner.json', JSON.stringify(randomBannerConfig), 'utf8', (res) =>
-    console.log(res),
-);
+//             if (commandInstance.data) {
+//                 console.log(commandInstance.data.name);
+//             }
+//         }
+//     }
+
+//     console.log(commands.length);
+//     console.log('done');
+// }
+
+// getCommands();
+
+async function t() {
+    const ob = await getCommandMappings();
+
+    console.log(ob);
+
+    console.log(ob['ping']);
+}
+t();

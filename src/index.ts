@@ -1,11 +1,10 @@
 import { Client } from 'discord.js';
 import config from './config';
-import * as commandModules from './commands';
 
 import mongoConfig from './mongoConfig';
 import { connect } from 'mongoose';
-
-const commands = Object(commandModules);
+import DiscordCommand from './commands/generic_discord_command';
+import { getCommandMappings } from './getCommands';
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });
 
@@ -32,9 +31,12 @@ client.once('ready', async (readyClient) => {
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
+    // Bro, what a fancy way to do this lol
     const { commandName } = interaction;
 
-    const command = commands[commandName];
+    const commands = await getCommandMappings();
+
+    const command: DiscordCommand = commands[commandName];
 
     if (!command) {
         console.error(`No command matching ${interaction.commandName} was found.`);
@@ -42,7 +44,7 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
-        command.execute(interaction, client);
+        command.runCommand(interaction, client);
     } catch (error) {
         console.error(error);
         if (interaction.replied || interaction.deferred) {

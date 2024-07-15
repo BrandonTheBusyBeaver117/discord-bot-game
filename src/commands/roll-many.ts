@@ -1,25 +1,51 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 
-const getCards = async () => {
-    return ['pikachu', 'charizard', ''];
-};
+import { GetCurrentBanner } from '../banner';
 
-// // Would be nice to have typescript now
-// const getPool = async (event) => {
-//     switch (event) {
-//         case "halloween":
-//             return []
-//         case "guildID????"
-//             return []
-//         default:
-//             return []
-//     }
+import userSchema from '../schema/user';
+import DiscordCommand from './generic_discord_command';
 
-// }
+class RollManyCommand extends DiscordCommand {
+    data = new SlashCommandBuilder().setName('roll-many').setDescription('Get a random card!');
 
-export const data = new SlashCommandBuilder().setName('roll').setDescription('Get a random card!');
+    override async execute(interaction: CommandInteraction): Promise<void> {
+        const banner = GetCurrentBanner();
 
-export async function execute(interaction: CommandInteraction) {
-    await interaction.reply(Math.random() > 0.5 ? 'Charizard' : 'Giratina');
+        const character = banner.getCard().name;
+
+        const userExists = await userSchema.exists({ uuid: interaction.user.id });
+
+        if (userExists) {
+            await userSchema.updateOne(
+                { uuid: interaction.user.id },
+                {
+                    $addToSet: { inventory: character },
+                },
+            );
+        } else {
+            await userSchema.create({
+                uuid: interaction.user.id,
+                inventory: [character],
+                gems: 0,
+                daily_timestamp: new Date('2000-00-00'),
+            });
+        }
+
+        await interaction.reply(character);
+    }
+}
+
+export default RollManyCommand;
+
+export function basicRoll(numCards: number): string[] {
+    const banner = GetCurrentBanner();
+
+    const characters = [];
+
+    for (let i = 0; i < numCards; i++) {
+        characters.push(banner.getCard().name);
+    }
+
+    return characters;
 }

@@ -1,26 +1,17 @@
 import config from './config';
-import * as commandModules from './commands';
 
 import { REST } from '@discordjs/rest';
-import { SlashCommandBuilder } from '@discordjs/builders';
 import { Routes } from 'discord-api-types/v10';
 
-type Command = {
-    data: SlashCommandBuilder;
-};
+import { getCommands } from './getCommands';
 
-const commands = [];
-
-for (const module of Object.values(commandModules)) {
-    commands.push(module.data);
-}
-
-// Construct and prepare an instance of the REST module
 const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN);
 
 // and deploy your commands!
 (async () => {
     try {
+        const commands = (await getCommands()).map((command) => command.data);
+
         console.log(`Started refreshing ${commands.length} application (/) commands.`);
         console.log(commands);
         // The put method is used to fully refresh all commands in the guild with the current set

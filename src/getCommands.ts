@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import DiscordCommand from './commands/generic_discord_command';
 
+export type CommandMapping = {
+    [commandName: string]: DiscordCommand;
+};
+
 export async function getCommands(): Promise<DiscordCommand[]> {
     // Only goes one folder deep
     const commands = [];
@@ -23,19 +27,18 @@ export async function getCommands(): Promise<DiscordCommand[]> {
     return commands;
 }
 
-export async function getCommandMappings() {
-    // Cursed, but forgive me!!!
-    const commandMappings = {};
+export async function getCommandMappings(): Promise<Map<string, DiscordCommand>> {
+    const commandMappings = new Map<string, DiscordCommand>();
     const commands = await getCommands();
 
     for (const command of commands) {
-        if (command.data.name in commandMappings) {
+        if (commandMappings.has(command.data.name)) {
             console.error(
                 `Duplicate command name: "${command.data.name}", command names must be unique!`,
             );
+        } else {
+            commandMappings[command.data.name] = command;
         }
-
-        commandMappings[command.data.name] = command;
     }
 
     return commandMappings;

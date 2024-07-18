@@ -8,8 +8,10 @@ import { getCommandMappings } from './getCommands';
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });
 
+let commandMappings: Map<string, DiscordCommand> = null;
+
 client.once('ready', async (readyClient) => {
-    console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+    commandMappings = await getCommandMappings();
 
     if (!mongoConfig.MONGODB_URL) return;
 
@@ -22,6 +24,7 @@ client.once('ready', async (readyClient) => {
             console.log('failed to connect to db');
         }
         console.log(`Both db and bot is up and running!`);
+        console.log(`Ready! Logged in as ${readyClient.user.tag}`);
     } catch (err) {
         console.log('MongoDB connection error. Please make sure MongoDB is running. ' + err);
         process.exit();
@@ -29,17 +32,23 @@ client.once('ready', async (readyClient) => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
+    if (!interaction.isCommand()) {
+        console.error('Interaction is not a command');
+        return;
+    }
+
+    if (!commandMappings) {
+        console.error('No command mappings');
+        return;
+    }
 
     // Bro, what a fancy way to do this lol
     const { commandName } = interaction;
 
-    const commands = await getCommandMappings();
-
-    const command: DiscordCommand = commands[commandName];
+    const command: DiscordCommand = commandMappings.get(commandName);
 
     if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
+        console.error(`No command matching ${commandName} was found.`);
         return;
     }
 

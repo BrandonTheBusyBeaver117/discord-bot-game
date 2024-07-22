@@ -16,13 +16,6 @@ class RemoveCommand extends DiscordCommand {
         });
 
     override async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        const userExists = await userSchema.exists({ uuid: interaction.user.id });
-
-        if (!userExists) {
-            await interaction.reply('Roll before checking your inventory!');
-            return;
-        }
-
         const updatedUser = await userSchema.findOneAndUpdate(
             { uuid: interaction.user.id },
             {

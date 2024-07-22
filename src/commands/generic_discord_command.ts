@@ -5,6 +5,7 @@ import {
     SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
 import userSchema from '../schema/user';
+import { Document } from 'mongoose';
 
 class DiscordCommand {
     data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
@@ -14,10 +15,10 @@ class DiscordCommand {
 
     async preExecute(interaction: CommandInteraction): Promise<void> {
         // Create user account if doesn't exist already
-        const userExists = await userSchema.exists({ uuid: interaction.user.id });
+        const user = await userSchema.findOne({ uuid: interaction.user.id });
 
-        if (!userExists) {
-            //TODO: I remember there was a way to instantiate default database values
+        if (!user) {
+            // TODO: I remember there was a way to instantiate default database values
             await userSchema.create({
                 uuid: interaction.user.id,
                 inventory: [],
@@ -32,6 +33,7 @@ class DiscordCommand {
 
     async runCommand(interaction: CommandInteraction, client: Client): Promise<void> {
         await this.preExecute(interaction);
+
         if (this.needsClient) {
             this.executeWithClient(interaction, client);
         } else {

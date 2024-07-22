@@ -12,15 +12,6 @@ class ClaimDailyGems extends DiscordCommand {
     override async execute(interaction: CommandInteraction): Promise<void> {
         const numDailyGems = 10;
 
-        const userExists = await userSchema.exists({ uuid: interaction.user.id });
-
-        if (!userExists) {
-            await interaction.reply(
-                'Roll first! DEV NOTE: maybe we should make them sign up first lol.',
-            );
-            return;
-        }
-
         const updatedUser = await userSchema.findOneAndUpdate(
             { uuid: interaction.user.id },
             {

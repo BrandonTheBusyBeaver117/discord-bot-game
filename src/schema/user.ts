@@ -1,17 +1,29 @@
-import { Schema, model } from 'mongoose';
+import { Document, Schema, model } from 'mongoose';
 
-interface user {
-    uuid: string;
-    inventory: string[];
+export interface InventoryItem {
+    name: string;
+    count: number;
 }
 
-const userSchema = model(
+export interface User extends Document {
+    uuid: string;
+    inventory: InventoryItem[];
+    gems: Number;
+    dailyTimestamp: Date;
+}
+
+const userSchema = model<User>(
     'userSchema873478912',
     new Schema({
         uuid: { type: String, required: true },
-        inventory: [{ type: String, required: true }],
+        inventory: [
+            {
+                name: { type: String, required: true },
+                count: { type: Number, required: true },
+            },
+        ],
         gems: { type: Number, required: true },
-        daily_timestamp: { type: Date, required: true },
+        dailyTimestamp: { type: Date, required: true },
     }),
 );
 

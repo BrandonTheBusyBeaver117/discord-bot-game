@@ -5,7 +5,6 @@ import {
     SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
 import userSchema from '../schema/user';
-import { Document } from 'mongoose';
 
 class DiscordCommand {
     data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
@@ -13,8 +12,8 @@ class DiscordCommand {
 
     constructor() {}
 
-    async preExecute(interaction: CommandInteraction): Promise<void> {
-        // Create user account if doesn't exist already
+    /** Create user account if doesn't exist already */
+    async createUser(interaction: CommandInteraction): Promise<void> {
         const user = await userSchema.findOne({ uuid: interaction.user.id });
 
         if (!user) {
@@ -23,9 +22,13 @@ class DiscordCommand {
                 uuid: interaction.user.id,
                 inventory: [],
                 gems: 0,
-                daily_timestamp: new Date('2000-00-00'),
+                dailyTimestamp: new Date('2000-01-01'),
             });
         }
+    }
+
+    async preExecute(interaction: CommandInteraction): Promise<void> {
+        await this.createUser(interaction);
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {}

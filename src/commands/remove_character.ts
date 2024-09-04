@@ -2,7 +2,7 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction, CommandInteraction } from 'discord.js';
 
 import userSchema from '../schema/user';
-import DiscordCommand from './generic_discord_command';
+import DiscordCommand from './discord_command';
 
 class RemoveCommand extends DiscordCommand {
     data = new SlashCommandBuilder()

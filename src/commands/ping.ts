@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
-import DiscordCommand from './generic_discord_command';
+import DiscordCommand from './discord_command';
 
 class PingCommand extends DiscordCommand {
     data: SlashCommandBuilder = new SlashCommandBuilder()

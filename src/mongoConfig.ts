@@ -12,3 +12,9 @@ const mongoConfig: Record<string, string> = {
 };
 
 export default mongoConfig;
+
+export type MongooseStatement = {
+    [key: string]: {
+        [key: string]: any;
+    };
+};

@@ -1,27 +1,45 @@
 import fs from 'fs';
 import path from 'path';
-import DiscordCommand from './commands/generic_discord_command';
+import DiscordCommand from './commands/discord_command';
 
 export type CommandMapping = {
     [commandName: string]: DiscordCommand;
 };
 
 export async function getCommands(): Promise<DiscordCommand[]> {
-    // Only goes one folder deep
-    const commands = [];
-    const commandsPath = path.join(__dirname, 'commands');
-    const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
+    const potentialCommandPaths: string[] = [];
 
-    for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
+    // Thanks to @Smally at https://stackoverflow.com/a/63111390 for writing this
+    // recursive function to go through all directories and get files
+    function traverseThroughDirectory(directory: string) {
+        fs.readdirSync(directory).forEach((file) => {
+            const absolutePath = path.join(directory, file);
 
-        const module = await import(filePath);
+            if (fs.statSync(absolutePath).isDirectory()) {
+                return traverseThroughDirectory(absolutePath);
+            } else if (file.endsWith('.js')) {
+                return potentialCommandPaths.push(absolutePath);
+            }
+        });
+    }
 
-        const CommandClass = module.default;
+    const commandsFolder = path.join(__dirname, 'commands');
+    traverseThroughDirectory(commandsFolder);
 
-        if (typeof CommandClass === 'function' && new CommandClass().data) {
-            commands.push(new CommandClass());
-        }
+    const commands: DiscordCommand[] = [];
+
+    for (const potentialCommandPath of potentialCommandPaths) {
+        const module = await import(potentialCommandPath);
+
+        const commandClass = module.default;
+
+        if (!(typeof commandClass === 'function')) continue;
+
+        const commandInstance = new commandClass();
+
+        if (!(commandInstance instanceof DiscordCommand && commandInstance.data)) continue;
+
+        commands.push(commandInstance);
     }
 
     return commands;
@@ -37,7 +55,7 @@ export async function getCommandMappings(): Promise<Map<string, DiscordCommand>>
                 `Duplicate command name: "${command.data.name}", command names must be unique!`,
             );
         } else {
-            commandMappings[command.data.name] = command;
+            commandMappings.set(command.data.name, command);
         }
     }
 

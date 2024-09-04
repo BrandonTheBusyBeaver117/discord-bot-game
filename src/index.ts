@@ -3,7 +3,7 @@ import config from './config';
 
 import mongoConfig from './mongoConfig';
 import { connect } from 'mongoose';
-import DiscordCommand from './commands/generic_discord_command';
+import DiscordCommand from './commands/discord_command';
 import { getCommandMappings } from './getCommands';
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });

@@ -11,17 +11,19 @@ class RollOneCommand extends RollCommand {
     override async execute(interaction: CommandInteraction): Promise<void> {
         const characterName = GetCurrentBanner().getCard().name;
 
-        const updatedUser = await this.addCharacters(interaction.user.id, [characterName], -5);
+        const frequency = this.generateFrequencies([characterName]);
+
+        const updatedUser = await this.addCharacters(interaction.user.id, frequency, -5);
 
         let quantity = 0;
 
-        for (const item of updatedUser.inventory) {
-            if (item.name === characterName) {
-                quantity = item.count;
-            }
+        let newInventoryString = 'Updated Inventory:\n';
+        for (const { name, count } of updatedUser.inventory) {
+            newInventoryString += name + ' x' + count + ', ';
         }
 
-        await interaction.reply(characterName + ' x' + quantity);
+        await interaction.reply('New card drawn:\n' + characterName + ' x' + quantity);
+        await interaction.reply(newInventoryString);
     }
 }
 

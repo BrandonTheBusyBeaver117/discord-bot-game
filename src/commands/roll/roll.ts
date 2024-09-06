@@ -3,29 +3,23 @@ import { GetCurrentBanner } from '../../banner';
 import userSchema, { User } from '../../schema/user';
 import DiscordCommand from '../discord_command';
 
+type CharacterFrequencies = {
+    [characterName: string]: number;
+};
+
 class RollCommand extends DiscordCommand {
     async addCharacters(
         uuid: string,
-        characterNames: string[],
+        frequencies: CharacterFrequencies,
         totalGemCost: number,
     ): Promise<User> {
         // Check out updatebatch
-
-        const character = { name: 'newCharacter', count: 1 };
 
         // stupid non mongodb way :skull:
 
         let user = await userSchema.findOne({
             uuid: uuid,
         });
-
-        const frequencies: { characterName: number } = { characterName: 0 };
-
-        for (const characterName of characterNames) {
-            frequencies[characterName] = frequencies[characterName]
-                ? frequencies[characterName] + 1
-                : 1;
-        }
 
         for (const [characterName, frequency] of Object.entries(frequencies)) {
             const characterIndex = user.inventory.findIndex(
@@ -88,18 +82,20 @@ class RollCommand extends DiscordCommand {
 
         return updatedUser;
     }
+
+    generateFrequencies(characterNames: string[]): CharacterFrequencies {
+        const frequencies: CharacterFrequencies = {};
+
+        for (const characterName of characterNames) {
+            frequencies[characterName] = frequencies[characterName]
+                ? frequencies[characterName] + 1
+                : 1;
+        }
+
+        return frequencies;
+    }
+
+    displayUpdatedInventory(frequencies: CharacterFrequencies, user: User) {}
 }
 
 export default RollCommand;
-
-export function basicRoll(numCards: number): string[] {
-    const banner = GetCurrentBanner();
-
-    const characters = [];
-
-    for (let i = 0; i < numCards; i++) {
-        characters.push(banner.getCard().name);
-    }
-
-    return characters;
-}

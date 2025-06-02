@@ -15,6 +15,7 @@
     "author": "busybeaver",
     "license": "ISC",
     "dependencies": {
+        "cloudinary": "^2.4.0",
         "discord.js": "^14.15.3",
         "dotenv": "^16.4.5",
         "googleapis": "^140.0.0",

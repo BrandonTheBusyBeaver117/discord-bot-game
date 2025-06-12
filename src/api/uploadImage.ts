@@ -3,7 +3,7 @@ import { supabase } from '../index';
 import fs from 'fs';
 import path from 'path';
 
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
 dotenv.config();
 
 const IMAGE_DIR = './data/images';

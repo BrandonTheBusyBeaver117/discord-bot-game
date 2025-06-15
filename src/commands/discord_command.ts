@@ -4,26 +4,25 @@ import {
     SlashCommandBuilder,
     SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
-import userSchema from '../schema/user';
+import { supabase } from '..';
 
 class DiscordCommand {
     data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-    needsClient: boolean = false;
-
-    constructor() {}
+    constructor(data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder) {
+        this.data = data;
+    }
 
     /** Create user account if doesn't exist already */
     async createUser(interaction: CommandInteraction): Promise<void> {
-        const user = await userSchema.findOne({ uuid: interaction.user.id });
+        // Check if user exists
+        const { data: existingUser } = await supabase
+            .from('Users')
+            .select('id')
+            .eq('id', interaction.user.id)
+            .single();
 
-        if (!user) {
-            // TODO: I remember there was a way to instantiate default database values
-            await userSchema.create({
-                uuid: interaction.user.id,
-                inventory: [],
-                gems: 0,
-                dailyTimestamp: new Date('2000-01-01'),
-            });
+        if (!existingUser) {
+            await supabase.from('Users').insert([{ id: interaction.user.id, gem_count: 100 }]);
         }
     }
 
@@ -31,17 +30,12 @@ class DiscordCommand {
         await this.createUser(interaction);
     }
 
-    async execute(interaction: CommandInteraction): Promise<void> {}
-    async executeWithClient(interaction: CommandInteraction, client?: Client): Promise<void> {}
+    async execute(interaction: CommandInteraction, client: Client): Promise<void> {}
 
     async runCommand(interaction: CommandInteraction, client: Client): Promise<void> {
         await this.preExecute(interaction);
 
-        if (this.needsClient) {
-            this.executeWithClient(interaction, client);
-        } else {
-            this.execute(interaction);
-        }
+        await this.execute(interaction, client);
     }
 }
 

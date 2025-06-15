@@ -8,32 +8,56 @@ import { getCommandMappings } from './getCommands';
 import { createClient } from '@supabase/supabase-js';
 
 import * as dotenv from 'dotenv';
+import { loadCards } from './get_cards';
 dotenv.config();
+
+// type Effect = {
+//      id: string;
+//       type: string;
+//       probability: number;
+// }
+
+// type Move = {
+
+// }
+
+export type Card = {
+    id: string;
+    name: string;
+    //   moves: {
+    //     id: string;
+    //     name: string;
+    //     effect: {
+    //         name: string
+    //       id: string;
+    //       type: string;
+    //       probability: number;
+    //     };
+    //   }[];
+};
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });
 
-export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+// IF we want rls
+//export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
+export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 let commandMappings: Map<string, DiscordCommand> = null;
 
 client.once('ready', async (readyClient) => {
-    commandMappings = await getCommandMappings();
-
-    if (!mongoConfig.MONGODB_URL) return;
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+        console.log('Missing Supabase environment variables');
+        process.exit(1);
+    }
 
     try {
-        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-            console.log('Missing Supabase environment variables');
-            process.exit(1);
-        }
-        // Maybe we should try to connect with supabse...
-        // await connect(mongoConfig.MONGODB_URL);
+        // Loads the cards in the getcards file
+        // Also theoretically if this fails, we are not connected to the database
+        await loadCards();
 
-        // if (connect) {
-        //     console.log('connected to db');
-        // } else {
-        //     console.log('failed to connect to db');
-        // }
+        commandMappings = await getCommandMappings();
+
         console.log(`Both db and bot is up and running!`);
         console.log(`Ready! Logged in as ${readyClient.user.tag}`);
     } catch (err) {

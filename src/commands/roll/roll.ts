@@ -1,13 +1,14 @@
 import { GetCurrentBanner } from '../../banner';
 
 import userSchema, { User } from '../../schema/user';
+import CommandBase from '../command_base';
 import DiscordCommand from '../discord_command';
 
 type CharacterFrequencies = {
     [characterName: string]: number;
 };
 
-class RollCommand extends DiscordCommand {
+class RollCommand extends CommandBase {
     async addCharacters(
         uuid: string,
         frequencies: CharacterFrequencies,
@@ -52,34 +53,6 @@ class RollCommand extends DiscordCommand {
             { new: true },
         );
 
-        // if (!updatedUser) {
-        //     updatedUser = await userSchema.findOneAndUpdate(
-        //         {
-        //             uuid: uuid,
-        //             'inventory.name': character.name, // Now find where the name matches
-        //         },
-        //         {
-        //             $inc: { 'inventory.$.count': 1 }, // Increment the count if it exists
-        //         },
-        //         { new: true },
-        //     );
-        // }
-
-        // // Needs to be refactored to allow for multiple updates
-        // const updatedUser = await userSchema.findOneAndUpdate(
-        //     { uuid: uuid },
-        //     {
-        //         $inc: {
-        //             'inventory.$[e].count': 1,
-        //             gems: totalGemCost,
-        //         },
-        //     },
-        //     {
-        //         new: true,
-        //         arrayFilters: [{ 'e.count': { $lt: 10 }, 'e.name': { $in: characters } }],
-        //     },
-        // );
-
         return updatedUser;
     }
 
@@ -94,8 +67,6 @@ class RollCommand extends DiscordCommand {
 
         return frequencies;
     }
-
-    displayUpdatedInventory(frequencies: CharacterFrequencies, user: User) {}
 }
 
 export default RollCommand;

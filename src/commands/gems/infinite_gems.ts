@@ -4,9 +4,13 @@ import { CommandInteraction } from 'discord.js';
 import GemCommand from './gem_command';
 
 class InfiniteGems extends GemCommand {
-    data = new SlashCommandBuilder()
-        .setName('devonly_infinite_gems')
-        .setDescription('Add 999,999 gems to your account');
+    constructor() {
+        super(
+            new SlashCommandBuilder()
+                .setName('devonly_infinite_gems')
+                .setDescription('Add 999,999 gems to your account'),
+        );
+    }
 
     override async execute(interaction: CommandInteraction): Promise<void> {
         const numGems = 999999;

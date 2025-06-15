@@ -6,7 +6,9 @@ import { GetCurrentBanner } from '../../banner';
 import RollCommand from './roll';
 
 class RollOneCommand extends RollCommand {
-    data = new SlashCommandBuilder().setName('roll').setDescription('Get a random card!');
+    constructor() {
+        super(new SlashCommandBuilder().setName('roll').setDescription('Get a random card!'));
+    }
 
     override async execute(interaction: CommandInteraction): Promise<void> {
         const characterName = GetCurrentBanner().getCard().name;

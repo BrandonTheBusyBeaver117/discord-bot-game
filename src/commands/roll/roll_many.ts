@@ -6,15 +6,19 @@ import { GetCurrentBanner } from '../../banner';
 import RollCommand from './roll';
 
 class RollManyCommand extends RollCommand {
-    data = new SlashCommandBuilder()
-        .setName('roll_many')
-        .setDescription('Choose how times you want to roll! (Each roll is 5 gems)')
-        .addIntegerOption((option) => {
-            return option
-                .setName('number')
-                .setDescription('How many times you want to roll')
-                .setRequired(true);
-        });
+    constructor() {
+        super(
+            new SlashCommandBuilder()
+                .setName('roll_many')
+                .setDescription('Choose how times you want to roll! (Each roll is 5 gems)')
+                .addIntegerOption((option) => {
+                    return option
+                        .setName('number')
+                        .setDescription('How many times you want to roll')
+                        .setRequired(true);
+                }),
+        );
+    }
 
     override async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         const numCharacters = interaction.options.getInteger('number');

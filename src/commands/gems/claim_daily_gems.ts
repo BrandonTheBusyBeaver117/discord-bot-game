@@ -5,9 +5,13 @@ import GemCommand from './gem_command';
 import userSchema from '../../schema/user';
 
 class ClaimDailyGems extends GemCommand {
-    data = new SlashCommandBuilder()
-        .setName('claim_daily_gems')
-        .setDescription('Claim your daily gems!');
+    constructor() {
+        super(
+            new SlashCommandBuilder()
+                .setName('claim_daily_gems')
+                .setDescription('Claim your daily gems!'),
+        );
+    }
 
     override async execute(interaction: CommandInteraction): Promise<void> {
         const numDailyGems = 10;
@@ -52,31 +56,6 @@ class ClaimDailyGems extends GemCommand {
             console.log('failed');
             await interaction.reply(`Try again later`);
         }
-
-        // const user = await userSchema.findOneAndUpdate(
-        //     { uuid: interaction.user.id },
-        //     {
-        //         $inc: {
-
-        //             $cond: {
-        //                 if: {
-        //                     $gte: [
-        //                         "$$NOW",  // Current date and time
-        //                         { $dateAdd: { startDate: "$dailyTimestamp", unit: "day", amount: 1 } }
-        //                       ]
-        //                     }
-        //             }
-
-        //             gems: numDailyGems,
-        //         },
-        //     },
-        // );
-
-        // const updatedUser = await this.addGems(interaction.user.id, numDailyGems);
-
-        // await interaction.reply(
-        //     `You got ${numDailyGems} gems! Your current balance is ${updatedUser.gems}`,
-        // );
     }
 }
 

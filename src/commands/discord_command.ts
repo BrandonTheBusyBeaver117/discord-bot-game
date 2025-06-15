@@ -7,7 +7,9 @@ import {
 import { supabase } from '..';
 
 class DiscordCommand {
-    data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+    data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder = new SlashCommandBuilder().setName(
+        'command_base',
+    );
     constructor(data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder) {
         this.data = data;
     }

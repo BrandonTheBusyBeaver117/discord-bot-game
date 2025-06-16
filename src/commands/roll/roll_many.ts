@@ -4,6 +4,8 @@ import { ChatInputCommandInteraction, CommandInteraction } from 'discord.js';
 import { GetCurrentBanner } from '../../banner';
 
 import RollCommand from './roll';
+import { getCard } from '../../get_cards';
+import InventoryCommand from '../inventory';
 
 class RollManyCommand extends RollCommand {
     constructor() {
@@ -21,35 +23,31 @@ class RollManyCommand extends RollCommand {
     }
 
     override async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        const numCharacters = interaction.options.getInteger('number');
+        const numCards = interaction.options.getInteger('number');
 
-        const characterNames: string[] = [];
+        const frequency = this.pullCards(GetCurrentBanner(), numCards);
+        const updatedGems = await this.addCharacters(interaction.user.id, frequency, 5 * numCards);
 
-        for (let i = 0; i < numCharacters; i++) {
-            characterNames.push(GetCurrentBanner().getCard().name);
-        }
-
-        const frequencies = this.generateFrequencies(characterNames);
-
-        const updatedUser = await this.addCharacters(
-            interaction.user.id,
-            frequencies,
-            -5 * numCharacters,
+        const updatedInventory = await InventoryCommand.fetchCards(
+            interaction,
+            Array.from(frequency.keys()),
         );
 
-        let newCharacterString = 'New cards drawn:\n';
-        for (const [name, count] of Object.entries(frequencies)) {
-            newCharacterString += name + ' x' + count + ', ';
-        }
-        newCharacterString += '\n\n';
+        let message = 'New cards drawn: \n';
 
-        let newInventoryString = 'Updated Inventory:\n';
-        for (const { name, count } of updatedUser.inventory) {
-            newInventoryString += name + ' x' + count + ', ';
+        for (const [cardID, quantity] of frequency) {
+            message += `**${getCard(cardID).name}** x${quantity}\n`;
         }
 
-        await interaction.reply(newCharacterString);
-        await interaction.reply(newInventoryString);
+        message += '\nUpdated Inventory:\n';
+
+        for (const item of updatedInventory) {
+            message += `**${getCard(item.card_id).name}** x${item.quantity}\n`;
+        }
+
+        message += `Gem Balance: ${updatedGems}`;
+
+        await interaction.reply(message);
     }
 }
 

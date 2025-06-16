@@ -1,68 +1,50 @@
-import { GetCurrentBanner } from '../../banner';
-
-import userSchema, { User } from '../../schema/user';
+import { supabase } from '../..';
+import { Banner } from '../../banner';
 import CommandBase from '../command_base';
-import DiscordCommand from '../discord_command';
-
-type CharacterFrequencies = {
-    [characterName: string]: number;
-};
 
 class RollCommand extends CommandBase {
+    /**
+     * Adds cards to inventory
+     * @param uuid
+     * @param frequencies
+     * @param totalGemCost
+     * @returns gems
+     */
     async addCharacters(
         uuid: string,
-        frequencies: CharacterFrequencies,
+        frequencies: Map<string, number>,
         totalGemCost: number,
-    ): Promise<User> {
-        // Check out updatebatch
+    ): Promise<number> {
+        const cards = [];
 
-        // stupid non mongodb way :skull:
-
-        let user = await userSchema.findOne({
-            uuid: uuid,
-        });
-
-        for (const [characterName, frequency] of Object.entries(frequencies)) {
-            const characterIndex = user.inventory.findIndex(
-                (inventoryCharacter) => inventoryCharacter.name == characterName,
-            );
-
-            if (characterIndex == -1) {
-                user.inventory.push({
-                    name: characterName,
-                    count: frequency,
-                });
-            } else {
-                user.inventory[characterIndex] = {
-                    name: characterName,
-                    count: user.inventory[characterIndex].count + frequency,
-                };
-            }
+        for (const [cardID, quantity] of frequencies) {
+            cards.push({
+                card_id: cardID,
+                quantity: quantity,
+            });
         }
 
-        let updatedUser = await userSchema.findOneAndUpdate(
-            {
-                uuid: uuid,
-            },
-            {
-                $set: { inventory: user.inventory }, // Replace with new inventory
-                $inc: {
-                    gems: totalGemCost,
-                },
-            },
-            { new: true },
-        );
+        const { data, error } = await supabase.rpc('add_cards_batch', {
+            p_user_id: uuid,
+            p_cards: cards,
+            p_gems: totalGemCost,
+        });
 
-        return updatedUser;
+        if (error) {
+            console.error('Error:', error.message);
+        }
+
+        return data;
     }
 
-    generateFrequencies(characterNames: string[]): CharacterFrequencies {
-        const frequencies: CharacterFrequencies = {};
+    pullCards(banner: Banner, num: number): Map<string, number> {
+        const frequencies = new Map<string, number>();
 
-        for (const characterName of characterNames) {
-            frequencies[characterName] = frequencies[characterName]
-                ? frequencies[characterName] + 1
-                : 1;
+        for (let i = 0; i < num; i++) {
+            const characterName = banner.getCard().name;
+            const prevFrequency = frequencies.get(characterName) || 0;
+
+            frequencies.set(characterName, prevFrequency + 1);
         }
 
         return frequencies;

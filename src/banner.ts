@@ -52,7 +52,7 @@ type BannerConfig = {
     distribution: Distribution;
 };
 
-class Banner {
+export class Banner {
     name: string;
     common: Array<Cards>;
     rare: Array<Cards>;

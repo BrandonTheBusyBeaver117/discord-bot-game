@@ -4,6 +4,8 @@ import { CommandInteraction } from 'discord.js';
 import { GetCurrentBanner } from '../../banner';
 
 import RollCommand from './roll';
+import InventoryCommand from '../inventory';
+import { getCard } from '../../get_cards';
 
 class RollOneCommand extends RollCommand {
     constructor() {
@@ -11,21 +13,31 @@ class RollOneCommand extends RollCommand {
     }
 
     override async execute(interaction: CommandInteraction): Promise<void> {
-        const characterName = GetCurrentBanner().getCard().name;
+        const frequency = this.pullCards(GetCurrentBanner(), 1);
+        const updatedGems = await this.addCharacters(interaction.user.id, frequency, 5);
 
-        const frequency = this.generateFrequencies([characterName]);
+        const updatedInventory = await InventoryCommand.fetchCards(
+            interaction,
+            Array.from(frequency.keys()),
+        );
 
-        const updatedUser = await this.addCharacters(interaction.user.id, frequency, -5);
-
-        let quantity = 0;
-
-        let newInventoryString = 'Updated Inventory:\n';
-        for (const { name, count } of updatedUser.inventory) {
-            newInventoryString += name + ' x' + count + ', ';
+        // Making sure we only pulled a single card...
+        if (updatedInventory.length !== 1) {
+            await interaction.reply("something very bad has happened - we didn't pull one card");
+            return;
         }
 
-        await interaction.reply('New card drawn:\n' + characterName + ' x' + quantity);
-        await interaction.reply(newInventoryString);
+        // Only works cause we pulled a single card
+        const characterName = getCard(updatedInventory[0].card_id).name;
+
+        let message = 'New card drawn: **' + characterName + '**\n\n';
+
+        message += 'Updated Inventory:\n';
+        message += `**${characterName}** x${updatedInventory[0].quantity}\n\n`;
+
+        message += `Gem Balance: ${updatedGems}`;
+
+        await interaction.reply(message);
     }
 }
 

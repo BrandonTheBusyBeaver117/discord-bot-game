@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { Client, CommandInteraction } from 'discord.js';
-import { GetCurrentBanner } from '../banner';
+import { getCurrentBanner } from '../banner';
 import DiscordCommand from './discord_command';
 
 class CurrentBanner extends DiscordCommand {
@@ -14,7 +14,7 @@ class CurrentBanner extends DiscordCommand {
 
     override async execute(interaction: CommandInteraction, client: Client): Promise<void> {
         await interaction.reply(
-            `The current banner is: ${GetCurrentBanner().name}:\n${GetCurrentBanner().getCardsInBannerStringified()}`,
+            `The current banner is: ${getCurrentBanner().name}:\n${getCurrentBanner().getCardsInBannerStringified()}`,
         );
     }
 }

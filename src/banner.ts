@@ -155,7 +155,7 @@ export const Banners: Banner[] = [
     new Banner(gen4Banner),
 ];
 
-export const GetCurrentBanner = (): Banner => {
+export const getCurrentBanner = (): Banner => {
     const randomBannerConfigPath = path.join(__dirname, '../data/random_banner.json');
 
     const prevRandomizedBannerConfig = JSON.parse(fs.readFileSync(randomBannerConfigPath, 'utf8'));

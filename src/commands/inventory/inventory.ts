@@ -4,11 +4,6 @@ import { Client, CommandInteraction } from 'discord.js';
 import InventoryBase from './inventory_base';
 import { fetchInventory, textifyInventory } from './inventory_util';
 
-export type Inventory = {
-    card_id: string;
-    quantity: number;
-}[];
-
 class InventoryCommand extends InventoryBase {
     constructor() {
         super(new SlashCommandBuilder().setName('inventory').setDescription('See all your cards!'));

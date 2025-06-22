@@ -1,10 +1,10 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction, Client, CommandInteraction } from 'discord.js';
 
-import DiscordCommand from './discord_command';
-import { supabase } from '..';
-import InventoryCommand from './inventory/inventory';
-import { getCard } from '../get_cards';
+import DiscordCommand from '../discord_command';
+import { supabase } from '../..';
+import { getCard } from '../../get_cards';
+import { fetchInventory, textifyInventory } from './inventory_util';
 
 class RemoveCommand extends DiscordCommand {
     constructor() {
@@ -47,10 +47,15 @@ class RemoveCommand extends DiscordCommand {
             return;
         }
 
-        await interaction.reply('Successfully deleted **' + cardName + '**');
+        let message = 'Successfully deleted **' + cardName + '**';
 
-        // Prints out updated inventory
-        await new InventoryCommand().execute(interaction, client);
+        // Build the inventory message
+        const data = await fetchInventory(interaction);
+        const inventoryText = textifyInventory(data);
+
+        message += '\n\n' + inventoryText;
+
+        await interaction.reply(message);
     }
 }
 

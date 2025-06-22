@@ -18,13 +18,13 @@ class DiscordCommand {
     async createUser(interaction: CommandInteraction): Promise<void> {
         // Check if user exists
         const { data: existingUser } = await supabase
-            .from('Users')
+            .from('users')
             .select('id')
             .eq('id', interaction.user.id)
             .single();
 
         if (!existingUser) {
-            await supabase.from('Users').insert([{ id: interaction.user.id, gem_count: 100 }]);
+            await supabase.from('users').insert([{ id: interaction.user.id, gem_count: 100 }]);
         }
     }
 

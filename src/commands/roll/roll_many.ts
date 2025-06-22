@@ -5,8 +5,8 @@ import { Banner, getCurrentBanner } from '../../banner';
 
 import RollCommand from './roll_base';
 import { getCard } from '../../get_cards';
-import InventoryCommand from '../inventory';
 import { pullCards, addCharacters } from './roll_util';
+import { fetchCards } from '../inventory/inventory_util';
 
 class RollManyCommand extends RollCommand {
     constructor() {
@@ -29,10 +29,7 @@ class RollManyCommand extends RollCommand {
         const frequency = pullCards(getCurrentBanner(), numCards);
         const updatedGems = await addCharacters(interaction.user.id, frequency, 5 * numCards);
 
-        const updatedInventory = await InventoryCommand.fetchCards(
-            interaction,
-            Array.from(frequency.keys()),
-        );
+        const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));
 
         let message = 'New cards drawn: \n';
 

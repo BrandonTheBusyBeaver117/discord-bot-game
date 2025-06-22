@@ -3,7 +3,7 @@ import { ChatInputCommandInteraction, Client, CommandInteraction } from 'discord
 
 import DiscordCommand from './discord_command';
 import { supabase } from '..';
-import InventoryCommand from './inventory';
+import InventoryCommand from './inventory/inventory';
 import { getCard } from '../get_cards';
 
 class RemoveCommand extends DiscordCommand {

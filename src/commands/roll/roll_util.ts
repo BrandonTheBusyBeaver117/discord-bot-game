@@ -1,5 +1,6 @@
 import { supabase } from '../..';
 import { Banner } from '../../banner';
+import { getCard } from '../../get_cards';
 
 /**
  * Adds cards to inventory
@@ -15,9 +16,9 @@ export const addCharacters = async (
 ): Promise<number> => {
     const cards = [];
 
-    for (const [cardID, quantity] of frequencies) {
+    for (const [cardIdentifier, quantity] of frequencies) {
         cards.push({
-            card_id: cardID,
+            card_id: getCard(cardIdentifier).id,
             quantity: quantity,
         });
     }
@@ -29,7 +30,7 @@ export const addCharacters = async (
     });
 
     if (error) {
-        console.error('Error:', error.message);
+        console.error('Add character error:', error.message);
     }
 
     return data;

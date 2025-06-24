@@ -51,6 +51,8 @@ export const fetchInventory = async (interaction: CommandInteraction): Promise<I
 };
 
 export const textifyInventory = (inventoryData: Inventory): string => {
+    if (inventoryData.length == 0) return 'Your inventory is empty';
+
     return inventoryData
         .map((item) => `**${getCard(item.card_id).name}** x${item.quantity}`)
         .join('\n');

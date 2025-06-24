@@ -33,13 +33,16 @@ export async function getCommands(): Promise<DiscordCommand[]> {
 
         const commandClass = module.default;
 
-        if (!(typeof commandClass === 'function')) continue;
+        if (typeof commandClass !== 'function') continue;
 
         const commandInstance = new commandClass();
+
+        console.log(commandInstance);
 
         if (
             !(
                 commandInstance instanceof DiscordCommand &&
+                commandInstance.data &&
                 commandInstance.data.name !== 'command_base'
             )
         )

@@ -61,7 +61,7 @@ client.once('ready', async (readyClient) => {
         console.log(`Both db and bot is up and running!`);
         console.log(`Ready! Logged in as ${readyClient.user.tag}`);
     } catch (err) {
-        console.log('MongoDB connection error. Please make sure MongoDB is running. ' + err);
+        console.log(err);
         process.exit();
     }
 });

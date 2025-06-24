@@ -34,7 +34,7 @@ class RemoveCommand extends DiscordCommand {
         const cardName = interaction.options.getString('character').toLowerCase();
 
         const { error: deleteError } = await supabase
-            .from('Inventory')
+            .from('inventory')
             .delete()
             .eq('user_id', interaction.user.id)
             .eq('card_id', getCard(cardName).id);

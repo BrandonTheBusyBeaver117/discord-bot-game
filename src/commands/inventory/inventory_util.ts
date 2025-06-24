@@ -19,7 +19,7 @@ export const fetchCards = async (
     }
 
     const { data: inventoryData, error: inventoryError } = await supabase
-        .from('Inventory')
+        .from('inventory')
         .select('card_id, quantity')
         .eq('user_id', interaction.user.id)
         .in('card_id', cardIDs);
@@ -37,7 +37,7 @@ export const fetchCards = async (
 
 export const fetchInventory = async (interaction: CommandInteraction): Promise<Inventory> => {
     const { data: inventoryData, error: inventoryError } = await supabase
-        .from('Inventory')
+        .from('inventory')
         .select('card_id, quantity')
         .eq('user_id', interaction.user.id);
 

@@ -18,7 +18,7 @@ export type Card = {
 const cardCache = new Map<string, Card>();
 
 export async function loadCards() {
-    const { data, error } = await supabase.from('Cards').select('id, name');
+    const { data, error } = await supabase.from('cards').select('id, name');
     if (error) {
         console.error('Failed to load cards:', error);
         return;

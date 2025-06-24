@@ -24,7 +24,7 @@ class DiscordCommand {
             .single();
 
         if (!existingUser) {
-            await supabase.from('users').insert([{ id: interaction.user.id, gem_count: 100 }]);
+            await supabase.from('users').insert([{ id: interaction.user.id, gems: 100 }]);
         }
     }
 

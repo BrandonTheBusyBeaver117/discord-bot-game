@@ -1,51 +1,51 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction, CommandInteraction } from 'discord.js';
 
-import { GetCurrentBanner } from '../../banner';
+import { Banner, getCurrentRandomBanner } from '../../banner';
 
-import RollCommand from './roll';
+import RollCommand from './roll_base';
+import { getCard } from '../../get_cards';
+import { pullCards, addCharacters } from './roll_util';
+import { fetchCards } from '../inventory/inventory_util';
 
 class RollManyCommand extends RollCommand {
-    data = new SlashCommandBuilder()
-        .setName('roll_many')
-        .setDescription('Choose how times you want to roll! (Each roll is 5 gems)')
-        .addIntegerOption((option) => {
-            return option
-                .setName('number')
-                .setDescription('How many times you want to roll')
-                .setRequired(true);
-        });
+    constructor() {
+        super(
+            new SlashCommandBuilder()
+                .setName('roll_many')
+                .setDescription('Choose how times you want to roll! (Each roll is 5 gems)')
+                .addIntegerOption((option) => {
+                    return option
+                        .setName('number')
+                        .setDescription('How many times you want to roll')
+                        .setRequired(true);
+                }),
+        );
+    }
 
     override async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        const numCharacters = interaction.options.getInteger('number');
+        const numCards = interaction.options.getInteger('number');
 
-        const characterNames: string[] = [];
+        const frequency = pullCards(getCurrentRandomBanner(), numCards);
+        const updatedGems = await addCharacters(interaction.user.id, frequency, 5 * numCards);
 
-        for (let i = 0; i < numCharacters; i++) {
-            characterNames.push(GetCurrentBanner().getCard().name);
+        const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));
+
+        let message = 'New cards drawn: \n';
+
+        for (const [cardID, quantity] of frequency) {
+            message += `**${getCard(cardID).name}** x${quantity}\n`;
         }
 
-        const frequencies = this.generateFrequencies(characterNames);
+        message += '\nUpdated Inventory:\n';
 
-        const updatedUser = await this.addCharacters(
-            interaction.user.id,
-            frequencies,
-            -5 * numCharacters,
-        );
-
-        let newCharacterString = 'New cards drawn:\n';
-        for (const [name, count] of Object.entries(frequencies)) {
-            newCharacterString += name + ' x' + count + ', ';
-        }
-        newCharacterString += '\n\n';
-
-        let newInventoryString = 'Updated Inventory:\n';
-        for (const { name, count } of updatedUser.inventory) {
-            newInventoryString += name + ' x' + count + ', ';
+        for (const item of updatedInventory) {
+            message += `**${getCard(item.card_id).name}** x${item.quantity}\n`;
         }
 
-        await interaction.reply(newCharacterString);
-        await interaction.reply(newInventoryString);
+        message += `Gem Balance: ${updatedGems}`;
+
+        await interaction.reply(message);
     }
 }
 

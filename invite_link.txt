@@ -1,0 +1,2 @@
+has a heck of permissions
+https://discord.com/oauth2/authorize?client_id=1253949207916711996&permissions=397284735040&integration_type=0&scope=bot+applications.commands

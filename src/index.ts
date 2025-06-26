@@ -1,8 +1,6 @@
 import { Client } from 'discord.js';
 import config from './config';
 
-import mongoConfig from './mongoConfig';
-import { connect } from 'mongoose';
 import DiscordCommand from './commands/discord_command';
 import { getCommandMappings } from './getCommands';
 import { createClient } from '@supabase/supabase-js';

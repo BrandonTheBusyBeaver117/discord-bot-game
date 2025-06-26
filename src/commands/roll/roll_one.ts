@@ -30,7 +30,9 @@ class RollOneCommand extends RollCommand {
 
         let message = 'New card drawn: **' + characterName + '**\n\n';
 
-        message += 'Updated Inventory:\n';
+        message += `https://res.cloudinary.com/anicardimages/image/upload/images/${characterName.replace(' ', '%20')}`;
+
+        message += '\nUpdated Inventory:\n';
         message += `**${characterName}** x${updatedInventory[0].quantity}\n\n`;
 
         message += `Gem Balance: ${updatedGems}`;

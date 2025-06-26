@@ -10,8 +10,7 @@
         "dev": "npm run build && nodemon build/index.js",
         "clean": "rimraf build",
         "build": "npm run clean && tsc",
-        "pretty": "prettier --write \"./**/*.{ts}\"",
-        "update-db": "npm run build && node build/update-mongo.js"
+        "pretty": "prettier --write \"./**/*.{ts}\""
     },
     "author": "busybeaver",
     "license": "ISC",

@@ -33,8 +33,11 @@ export async function loadCards() {
         cardCache.set(card.id, card);
         cardCache.set(card.name, card);
 
-        cardsByRarityCache[card.rarity] ??= [];
-        cardsByRarityCache[card.rarity].push(card);
+        if (!cardsByRarityCache.has(card.rarity)) {
+            cardsByRarityCache.set(card.rarity, []);
+            console.log(card.rarity);
+        }
+        cardsByRarityCache.get(card.rarity).push(card);
     }
 
     console.log(`✅ Loaded ${cardCache.size} cards into cache.`);

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 
-import { getCurrentBanner } from '../../banner';
+import { getCurrentRandomBanner } from '../../banner';
 
 import RollCommand from './roll_base';
 import { getCard } from '../../get_cards';
@@ -14,7 +14,7 @@ class RollOneCommand extends RollCommand {
     }
 
     override async execute(interaction: CommandInteraction): Promise<void> {
-        const frequency = pullCards(getCurrentBanner(), 1);
+        const frequency = pullCards(getCurrentRandomBanner(), 1);
         const updatedGems = await addCharacters(interaction.user.id, frequency, 5);
 
         const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));

@@ -145,8 +145,7 @@ const generateRandomBanner = (): Banner => {
     return new Banner(randomBannerConfig);
 };
 
-// idk, just in case we don't run the scheduler for some reason
-let randomBanner = generateRandomBanner();
+let randomBanner: Banner;
 
 export const getCurrentRandomBanner = (): Banner => randomBanner;
 

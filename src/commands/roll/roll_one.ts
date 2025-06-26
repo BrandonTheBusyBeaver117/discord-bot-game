@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { SlashCommandBuilder, EmbedBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 
 import { getCurrentRandomBanner } from '../../banner';
@@ -28,16 +28,26 @@ class RollOneCommand extends RollCommand {
         // Only works cause we pulled a single card
         const characterName = getCard(updatedInventory[0].card_id).name;
 
-        let message = 'New card drawn: **' + characterName + '**\n\n';
+        const imageLink = `https://res.cloudinary.com/anicardimages/image/upload/images/${characterName.replace(' ', '%20')}`;
 
-        message += `https://res.cloudinary.com/anicardimages/image/upload/images/${characterName.replace(' ', '%20')}`;
+        const embed = new EmbedBuilder()
+            .setTitle('You rolled!')
+            .setDescription('New card drawn: **' + characterName + '**')
+            .addFields(
+                {
+                    name: 'Updated Inventory',
+                    value: `**${characterName}** x${updatedInventory[0].quantity}`,
+                    inline: true,
+                },
+                {
+                    name: 'Gem Balance',
+                    value: `${updatedGems}`,
+                    inline: true,
+                },
+            )
+            .setImage('https://media.lmpm.website/uploads/sites/82/2025/03/Bay-Area-Cities.jpg');
 
-        message += '\nUpdated Inventory:\n';
-        message += `**${characterName}** x${updatedInventory[0].quantity}\n\n`;
-
-        message += `Gem Balance: ${updatedGems}`;
-
-        await interaction.reply(message);
+        await interaction.reply({ embeds: [embed] });
     }
 }
 

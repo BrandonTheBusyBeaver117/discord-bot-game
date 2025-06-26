@@ -39,6 +39,10 @@ async function t() {
 
     console.log(ob);
 
-    console.log(ob['ping']);
+    console.log('===================');
+    console.log('\n');
+
+    console.log(ob.get('ping'));
+    console.log('ba');
 }
 t();

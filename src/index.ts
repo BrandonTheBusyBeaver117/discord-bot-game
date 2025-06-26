@@ -1,45 +1,66 @@
 import { Client } from 'discord.js';
 import config from './config';
 
-import mongoConfig from './mongoConfig';
-import { connect } from 'mongoose';
-import DiscordCommand from './commands/generic_discord_command';
+import DiscordCommand from './commands/discord_command';
 import { getCommandMappings } from './getCommands';
+import { createClient } from '@supabase/supabase-js';
+
+import * as dotenv from 'dotenv';
+import { loadCards } from './get_cards';
+import { startRandomBannerScheduler } from './banner';
+dotenv.config();
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });
 
-client.once('ready', async (readyClient) => {
-    console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+// IF we want rls
+//export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
-    if (!mongoConfig.MONGODB_URL) return;
+export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+
+let commandMappings: Map<string, DiscordCommand> = null;
+
+client.once('ready', async (readyClient) => {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+        console.log('Missing Supabase environment variables');
+        process.exit(1);
+    }
 
     try {
-        await connect(mongoConfig.MONGODB_URL);
+        // Loads the cards in the getcards file
+        // Also theoretically if this fails, we are not connected to the database
+        await loadCards();
 
-        if (connect) {
-            console.log('connected to db');
-        } else {
-            console.log('failed to connect to db');
-        }
+        // After loading cards we can start scheduling for the random card banner
+        startRandomBannerScheduler();
+
+        commandMappings = await getCommandMappings();
+
         console.log(`Both db and bot is up and running!`);
+        console.log(`Ready! Logged in as ${readyClient.user.tag}`);
     } catch (err) {
-        console.log('MongoDB connection error. Please make sure MongoDB is running. ' + err);
+        console.log(err);
         process.exit();
     }
 });
 
 client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
+    if (!interaction.isCommand()) {
+        console.error('Interaction is not a command');
+        return;
+    }
+
+    if (!commandMappings) {
+        console.error('No command mappings');
+        return;
+    }
 
     // Bro, what a fancy way to do this lol
     const { commandName } = interaction;
 
-    const commands = await getCommandMappings();
-
-    const command: DiscordCommand = commands[commandName];
+    const command: DiscordCommand = commandMappings.get(commandName);
 
     if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
+        console.error(`No command matching ${commandName} was found.`);
         return;
     }
 

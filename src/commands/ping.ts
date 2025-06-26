@@ -1,13 +1,13 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction } from 'discord.js';
-import DiscordCommand from './generic_discord_command';
+import { Client, CommandInteraction } from 'discord.js';
+import DiscordCommand from './discord_command';
 
 class PingCommand extends DiscordCommand {
-    data: SlashCommandBuilder = new SlashCommandBuilder()
-        .setName('ping')
-        .setDescription('Replies with Pong!');
+    constructor() {
+        super(new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'));
+    }
 
-    override async execute(interaction: CommandInteraction): Promise<void> {
+    override async execute(interaction: CommandInteraction, client: Client): Promise<void> {
         await interaction.reply('Pong!');
     }
 }

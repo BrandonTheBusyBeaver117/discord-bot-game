@@ -1,10 +1,5 @@
-import Characters from './characters';
-import fs from 'fs';
-import path from 'path';
-
-type Cards = {
-    name: string;
-};
+import { Card, getRarity } from './get_cards';
+import nodeCron from 'node-cron';
 
 /** Distributions in percentages */
 type Distribution = {
@@ -45,26 +40,26 @@ const defaultDistribution: Distribution = new DistributionValidator({
 
 type BannerConfig = {
     name: string;
-    common: Array<Cards>;
-    rare: Array<Cards>;
-    epic: Array<Cards>;
-    legendary: Array<Cards>;
+    common: Array<Card>;
+    rare: Array<Card>;
+    epic: Array<Card>;
+    legendary: Array<Card>;
     distribution: Distribution;
 };
 
 export class Banner {
     name: string;
-    common: Array<Cards>;
-    rare: Array<Cards>;
-    epic: Array<Cards>;
-    legendary: Array<Cards>;
+    common: Array<Card>;
+    rare: Array<Card>;
+    epic: Array<Card>;
+    legendary: Array<Card>;
     distribution: Distribution;
 
     constructor(config: BannerConfig) {
         Object.assign(this, config);
     }
 
-    getCard(): Cards {
+    getCard(): Card {
         const random = Math.random() * 100;
 
         let rarity = '';
@@ -89,7 +84,7 @@ export class Banner {
     }
 
     private joinCards(rarity: string): string {
-        return `${rarity.charAt(0).toUpperCase() + rarity.slice(1)}: ${this[rarity].map((card: Cards) => card.name).join(', ')}`;
+        return `${rarity.charAt(0).toUpperCase() + rarity.slice(1)}: ${this[rarity].map((card: Card) => card.name).join(', ')}`;
     }
 
     getCardsInBannerStringified(): string {
@@ -102,88 +97,67 @@ export class Banner {
     }
 }
 
-const defaultBannerConfig: BannerConfig = {
-    name: 'Default',
-    common: [
-        { name: 'pikachu' },
-        { name: 'bulbasaur' },
-        { name: 'squirtle' },
-        { name: 'charmander' },
-    ],
-    rare: [{ name: 'butterfree' }, { name: 'hitmonchan' }, { name: 'onix' }],
-    epic: [{ name: 'gyarados' }, { name: 'dragonite' }],
-    legendary: [{ name: 'mewtwo' }],
-    distribution: defaultDistribution,
-};
+// const gen3Banner: BannerConfig = {
+//     name: 'Gen 3',
+//     common: [{ name: 'treecko' }, { name: 'torchic' }, { name: 'mudkip' }, { name: 'whismur' }],
+//     rare: [{ name: 'walrein' }, { name: 'milotic' }, { name: 'altaria' }],
+//     epic: [{ name: 'metagross' }, { name: 'registeel' }],
+//     legendary: [{ name: 'rayquaza' }],
+//     distribution: defaultDistribution,
+// };
 
-const gen3Banner: BannerConfig = {
-    name: 'Gen 3',
-    common: [{ name: 'treecko' }, { name: 'torchic' }, { name: 'mudkip' }, { name: 'whismur' }],
-    rare: [{ name: 'walrein' }, { name: 'milotic' }, { name: 'altaria' }],
-    epic: [{ name: 'metagross' }, { name: 'registeel' }],
-    legendary: [{ name: 'rayquaza' }],
-    distribution: defaultDistribution,
-};
-
-const gen4Banner: BannerConfig = {
-    name: 'Gen 4',
-    common: [{ name: 'turtwig' }, { name: 'chimchar' }, { name: 'piplup' }, { name: 'bidoof' }],
-    rare: [{ name: 'gastrodon' }, { name: 'bastiodon' }, { name: 'drapion' }],
-    epic: [{ name: 'mamoswine' }, { name: 'garchomp' }],
-    legendary: [{ name: 'arceus' }],
-    distribution: defaultDistribution,
-};
-
-const getRandomCards = (pool: string[], numCards: number): Cards[] => {
+/**
+ * A function to help pick out the cards of a certain rarity for your banner
+ * @param pool The possible cards for this rarity
+ * @param numCards How many cards you want in this rairty
+ * @returns The array for the rarity
+ */
+const getRandomCards = (pool: Card[], numCards: number): Card[] => {
+    // Make copy so we can remove elements and ensure unique cards
     const poolCopy = pool.slice();
-    const elements = [];
+    const cards = [];
 
     for (let i = 0; i < numCards; i++) {
         const randomElementIndex = Math.floor(Math.random() * poolCopy.length);
 
-        console.log(randomElementIndex);
+        // console.log(randomElementIndex);
 
-        elements.push(...poolCopy.splice(randomElementIndex, 1));
+        cards.push(...poolCopy.splice(randomElementIndex, 1));
     }
 
-    return elements.map((charName) => ({ name: charName }));
+    return cards;
 };
 
 export const Banners: Banner[] = [
-    new Banner(defaultBannerConfig),
-    new Banner(gen3Banner),
-    new Banner(gen4Banner),
+    // new Banner(gen3Banner),
 ];
 
-export const getCurrentBanner = (): Banner => {
-    const randomBannerConfigPath = path.join(__dirname, '../data/random_banner.json');
-
-    const prevRandomizedBannerConfig = JSON.parse(fs.readFileSync(randomBannerConfigPath, 'utf8'));
-
-    if (new Date().getHours() === prevRandomizedBannerConfig.hour) {
-        return new Banner(prevRandomizedBannerConfig.config);
-    }
-
+const generateRandomBanner = (): Banner => {
     const randomBannerConfig: BannerConfig = {
         name: 'Random',
-        common: getRandomCards(Characters.common, 4),
-        rare: getRandomCards(Characters.rare, 3),
-        epic: getRandomCards(Characters.epic, 2),
-        legendary: getRandomCards(Characters.legendary, 1),
+        common: getRandomCards(getRarity('common'), 4),
+        rare: getRandomCards(getRarity('rare'), 3),
+        epic: getRandomCards(getRarity('epic'), 2),
+        legendary: getRandomCards(getRarity('legendary'), 1),
         distribution: defaultDistribution,
     };
 
-    const jsonifiedRandomBannerConfig = {
-        hour: new Date().getHours(),
-        config: randomBannerConfig,
-    };
-
-    fs.writeFileSync(randomBannerConfigPath, JSON.stringify(jsonifiedRandomBannerConfig), 'utf8');
-
     return new Banner(randomBannerConfig);
+};
 
-    // const minute = new Date().getMinutes();
+// idk, just in case we don't run the scheduler for some reason
+let randomBanner = generateRandomBanner();
 
-    // // Quick way to cycle through banners every minute
-    // const banner = Banners[minute % Banners.length];
+export const getCurrentRandomBanner = (): Banner => randomBanner;
+
+export const startRandomBannerScheduler = (): void => {
+    // Generate immediately at startup
+    randomBanner = generateRandomBanner();
+    console.log(`Random Banner initialized at ${new Date().toLocaleTimeString()}`);
+
+    // Then update every hour on the hour
+    nodeCron.schedule('0 * * * *', () => {
+        randomBanner = generateRandomBanner();
+        console.log(`Random Banner updated at ${new Date().toLocaleTimeString()}`);
+    });
 };

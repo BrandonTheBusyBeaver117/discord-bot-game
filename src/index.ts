@@ -9,32 +9,8 @@ import { createClient } from '@supabase/supabase-js';
 
 import * as dotenv from 'dotenv';
 import { loadCards } from './get_cards';
+import { startRandomBannerScheduler } from './banner';
 dotenv.config();
-
-// type Effect = {
-//      id: string;
-//       type: string;
-//       probability: number;
-// }
-
-// type Move = {
-
-// }
-
-export type Card = {
-    id: string;
-    name: string;
-    //   moves: {
-    //     id: string;
-    //     name: string;
-    //     effect: {
-    //         name: string
-    //       id: string;
-    //       type: string;
-    //       probability: number;
-    //     };
-    //   }[];
-};
 
 const client = new Client({ intents: ['Guilds', 'GuildMessages', 'DirectMessages'] });
 
@@ -55,6 +31,9 @@ client.once('ready', async (readyClient) => {
         // Loads the cards in the getcards file
         // Also theoretically if this fails, we are not connected to the database
         await loadCards();
+
+        // After loading cards we can start scheduling for the random card banner
+        startRandomBannerScheduler();
 
         commandMappings = await getCommandMappings();
 

@@ -26,9 +26,10 @@ class RollOneCommand extends RollCommand {
         }
 
         // Only works cause we pulled a single card
-        const characterName = getCard(updatedInventory[0].card_id).name;
+        const card = getCard(updatedInventory[0].card_id);
+        const characterName = card.name;
 
-        const imageLink = `https://res.cloudinary.com/anicardimages/image/upload/images/${characterName.replace(' ', '%20')}`;
+        const imageLink = `https://res.cloudinary.com/anicardimages/image/upload/images/${card.id}`;
 
         const embed = new EmbedBuilder()
             .setTitle('You rolled!')
@@ -45,7 +46,9 @@ class RollOneCommand extends RollCommand {
                     inline: true,
                 },
             )
-            .setImage('https://media.lmpm.website/uploads/sites/82/2025/03/Bay-Area-Cities.jpg');
+            .setImage(imageLink);
+
+        console.log(imageLink);
 
         await interaction.reply({ embeds: [embed] });
     }

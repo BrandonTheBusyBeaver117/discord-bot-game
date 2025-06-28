@@ -4,7 +4,7 @@
     "description": "A new discord game!",
     "main": "index.js",
     "scripts": {
-        "test": "npm run build && node build/test.js",
+        "script": "npm run build && node build/run_script.js",
         "start": "node build/index.js",
         "deploy-commands": "npm run build && node build/deploy-commands",
         "dev": "npm run build && nodemon build/index.js",
@@ -22,11 +22,13 @@
         "fuse.js": "^7.1.0",
         "googleapis": "^140.0.0",
         "node-cron": "^4.1.1",
-        "papaparse": "^5.4.1"
+        "papaparse": "^5.4.1",
+        "prompt-sync": "^4.2.0"
     },
     "devDependencies": {
         "@types/glob": "^8.1.0",
         "@types/node": "^20.14.8",
+        "@types/prompt-sync": "^4.2.3",
         "nodemon": "^3.1.4",
         "prettier": "3.3.2",
         "rimraf": "^6.0.1",

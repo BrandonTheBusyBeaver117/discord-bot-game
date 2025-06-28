@@ -37,7 +37,7 @@ export async function getCommands(): Promise<DiscordCommand[]> {
 
         const commandInstance = new commandClass();
 
-        console.log(commandInstance);
+        // console.log(commandInstance);
 
         if (
             !(

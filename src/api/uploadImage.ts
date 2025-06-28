@@ -1,5 +1,4 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { supabase } from '../index';
 import fs from 'fs';
 import path from 'path';
 

@@ -31,11 +31,12 @@ export async function loadCards() {
     for (const card of data) {
         // use id or name as key
         cardCache.set(card.id, card);
-        cardCache.set(card.name, card);
+
+        // This is ok because we can still return a correctly capitalized name from the card itself
+        cardCache.set(card.name.toLowerCase().trim(), card);
 
         if (!cardsByRarityCache.has(card.rarity)) {
             cardsByRarityCache.set(card.rarity, []);
-            console.log(card.rarity);
         }
         cardsByRarityCache.get(card.rarity).push(card);
     }
@@ -48,13 +49,18 @@ export async function loadCards() {
  * @param identifier Either name or uuid of card
  * @returns The card itself
  */
-export function getCard(identifier: string): Card {
+export function getCard(identifier: string): Card | null {
     if (!cardCache.has(identifier)) {
         console.log("BIG ERROR - HOW COME THIS DOESN'T EXIST");
         console.log(identifier);
+        return;
     }
 
     return cardCache.get(identifier);
+}
+
+export function getCache(): Map<string, Card> {
+    return cardCache;
 }
 
 export function getRarity(rarity: string): Card[] {

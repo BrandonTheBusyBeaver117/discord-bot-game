@@ -125,11 +125,6 @@ function generateBannerRoster() {
                 continue;
             }
 
-            if ('Grimmjow (Panther)' == range.getCell(i, j).getValue()) {
-                console.log('apt');
-                console.log(Math.round((j - 1) / 2));
-            }
-
             newRowObjects[Math.round((j - 1) / 2)].push(range.getCell(i, j).getValue());
         }
     }
@@ -150,7 +145,7 @@ function writeEvolutions() {
     const range = sheet.getRange('A2:G256');
     const values = range.getValues();
 
-    const newRowObjects = [['card_name', 'evolution_card_name']];
+    const newRowObjects = [['name', 'evolution_name']];
 
     for (let i = 1; i <= values.length; i++) {
         let count = 0;

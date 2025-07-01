@@ -1,10 +1,9 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
-import { ChatInputCommandInteraction, CommandInteraction } from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder } from '@discordjs/builders';
+import { ChatInputCommandInteraction } from 'discord.js';
 
-import { Banner, getCurrentRandomBanner } from '../../banner';
+import { getCurrentRandomBanner } from '../../banner';
 
 import RollCommand from './roll_base';
-import { getCard } from '../../get_cards';
 import { pullCards, addCharacters } from './roll_util';
 import { fetchCards } from '../inventory/inventory_util';
 
@@ -29,23 +28,36 @@ class RollManyCommand extends RollCommand {
         const frequency = pullCards(getCurrentRandomBanner(), numCards);
         const updatedGems = await addCharacters(interaction.user.id, frequency, 5 * numCards);
 
-        const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));
+        const updatedInventory = await fetchCards(interaction, frequency.keys().toArray());
 
-        let message = 'New cards drawn: \n';
-
-        for (const [cardID, quantity] of frequency) {
-            message += `**${getCard(cardID).name}** x${quantity}\n`;
-        }
-
-        message += '\nUpdated Inventory:\n';
+        const fieldsByRarity = new Map<
+            string,
+            {
+                name: string;
+                value: string;
+                inline?: boolean;
+            }
+        >();
 
         for (const item of updatedInventory) {
-            message += `**${getCard(item.card_id).name}** x${item.quantity}\n`;
+            const card = item.card;
+
+            if (!fieldsByRarity.has(card.rarity)) {
+                fieldsByRarity.set(card.rarity, {
+                    name:
+                        card.rarity.slice(0, 1).toUpperCase() + card.rarity.slice(1).toLowerCase(),
+                    value: '',
+                    inline: false,
+                });
+            }
+            fieldsByRarity.get(card.rarity).value += `**${card.name}** x${item.quantity}`;
         }
+        const embed = new EmbedBuilder()
+            .setTitle(`You rolled ${numCards} times!`)
+            .setDescription(`Gem Balance: ${updatedGems}`)
+            .addFields(fieldsByRarity.values().toArray());
 
-        message += `Gem Balance: ${updatedGems}`;
-
-        await interaction.reply(message);
+        await interaction.reply({ embeds: [embed] });
     }
 }
 

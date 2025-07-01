@@ -4,7 +4,6 @@ import { CommandInteraction } from 'discord.js';
 import { getCurrentRandomBanner } from '../../banner';
 
 import RollCommand from './roll_base';
-import { getCard } from '../../get_cards';
 import { pullCards, addCharacters } from './roll_util';
 import { fetchCards } from '../inventory/inventory_util';
 
@@ -26,7 +25,7 @@ class RollOneCommand extends RollCommand {
         }
 
         // Only works cause we pulled a single card
-        const card = getCard(updatedInventory[0].card_id);
+        const card = updatedInventory[0].card;
         const characterName = card.name;
 
         const imageLink = `https://res.cloudinary.com/anicardimages/image/upload/images/${card.id}`;
@@ -48,7 +47,7 @@ class RollOneCommand extends RollCommand {
             )
             .setImage(imageLink);
 
-        console.log(imageLink);
+        // console.log(imageLink);
 
         await interaction.reply({ embeds: [embed] });
     }

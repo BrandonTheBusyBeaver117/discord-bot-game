@@ -1,6 +1,6 @@
 import { supabase } from '../..';
 import { Banner } from '../../banner';
-import { getCard } from '../../get_cards';
+import { Card } from '../../get_cards';
 
 /**
  * Adds cards to inventory
@@ -11,14 +11,14 @@ import { getCard } from '../../get_cards';
  */
 export const addCharacters = async (
     uuid: string,
-    frequencies: Map<string, number>,
+    frequencies: Map<Card, number>,
     totalGemCost: number,
 ): Promise<number> => {
     const cards = [];
 
-    for (const [cardIdentifier, quantity] of frequencies) {
+    for (const [card, quantity] of frequencies) {
         cards.push({
-            card_id: getCard(cardIdentifier).id,
+            card_id: card.id,
             quantity: quantity,
         });
     }
@@ -36,14 +36,14 @@ export const addCharacters = async (
     return data;
 };
 
-export const pullCards = (banner: Banner, num: number): Map<string, number> => {
-    const frequencies = new Map<string, number>();
+export const pullCards = (banner: Banner, num: number): Map<Card, number> => {
+    const frequencies = new Map<Card, number>();
 
     for (let i = 0; i < num; i++) {
-        const characterName = banner.getCard().name;
-        const prevFrequency = frequencies.get(characterName) || 0;
+        const chosenCard = banner.getCard();
+        const prevFrequency = frequencies.get(chosenCard) || 0;
 
-        frequencies.set(characterName, prevFrequency + 1);
+        frequencies.set(chosenCard, prevFrequency + 1);
     }
 
     return frequencies;

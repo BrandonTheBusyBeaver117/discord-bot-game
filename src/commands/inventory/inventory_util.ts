@@ -1,28 +1,25 @@
 import { CommandInteraction } from 'discord.js';
 
 import { supabase } from '../..';
-import { getCard } from '../../get_cards';
+import { Card, getCard } from '../../get_cards';
 
 export type Inventory = {
-    card_id: string;
+    card: Card;
     quantity: number;
 }[];
 
 export const fetchCards = async (
     interaction: CommandInteraction,
-    cardIdentifiers: string[],
+    cards: Card[],
 ): Promise<Inventory> => {
-    const cardIDs = [];
-
-    for (const identifier of cardIdentifiers) {
-        cardIDs.push(getCard(identifier).id);
-    }
-
     const { data: inventoryData, error: inventoryError } = await supabase
         .from('inventory')
         .select('card_id, quantity')
         .eq('user_id', interaction.user.id)
-        .in('card_id', cardIDs);
+        .in(
+            'card_id',
+            cards.map((card) => card.id),
+        );
 
     if (inventoryError) {
         console.error('Failed to fetch cards:', inventoryError);
@@ -32,7 +29,13 @@ export const fetchCards = async (
         return;
     }
 
-    return inventoryData;
+    // Basically the supabase response returns just the ids, but we convert to cards
+    return inventoryData.map((item) => {
+        return {
+            ...item,
+            card: getCard(item.card_id),
+        };
+    });
 };
 
 export const fetchInventory = async (interaction: CommandInteraction): Promise<Inventory> => {
@@ -47,13 +50,17 @@ export const fetchInventory = async (interaction: CommandInteraction): Promise<I
         return;
     }
 
-    return inventoryData;
+    // Basically the supabase response returns just the ids, but we convert to cards
+    return inventoryData.map((item) => {
+        return {
+            ...item,
+            card: getCard(item.card_id),
+        };
+    });
 };
 
 export const textifyInventory = (inventoryData: Inventory): string => {
     if (inventoryData.length == 0) return 'Your inventory is empty';
 
-    return inventoryData
-        .map((item) => `**${getCard(item.card_id).name}** x${item.quantity}`)
-        .join('\n');
+    return inventoryData.map((item) => `**${item.card.name}** x${item.quantity}`).join('\n');
 };

@@ -28,6 +28,12 @@ export async function loadCards() {
 
     cardCache.clear(); // reset if you're reloading
     cardsByRarityCache.clear();
+
+    cardsByRarityCache.set('common', []);
+    cardsByRarityCache.set('rare', []);
+    cardsByRarityCache.set('epic', []);
+    cardsByRarityCache.set('legendary', []);
+
     for (const card of data) {
         // use id or name as key
         cardCache.set(card.id, card);
@@ -35,7 +41,9 @@ export async function loadCards() {
         // This is ok because we can still return a correctly capitalized name from the card itself
         cardCache.set(card.name.toLowerCase().trim(), card);
 
+        // This shouldn't happen
         if (!cardsByRarityCache.has(card.rarity)) {
+            console.log('unanticipated rarity');
             cardsByRarityCache.set(card.rarity, []);
         }
         cardsByRarityCache.get(card.rarity).push(card);

@@ -7,6 +7,12 @@ import RollCommand from './roll_base';
 import { pullCards, addCharacters } from './roll_util';
 import { fetchCards } from '../inventory/inventory_util';
 
+type EmbedItem = {
+    name: string;
+    value: string;
+    inline?: boolean;
+};
+
 class RollManyCommand extends RollCommand {
     constructor() {
         super(
@@ -22,40 +28,69 @@ class RollManyCommand extends RollCommand {
         );
     }
 
+    private createRarityMap(): Map<string, EmbedItem> {
+        const embedMapTemplate = new Map<string, EmbedItem>();
+
+        embedMapTemplate.set('common', {
+            name: '__common__',
+            value: '',
+            inline: false,
+        });
+
+        embedMapTemplate.set('rare', {
+            name: '__rare__',
+            value: '',
+            inline: false,
+        });
+
+        embedMapTemplate.set('epic', {
+            name: '__epic__',
+            value: '',
+            inline: false,
+        });
+
+        embedMapTemplate.set('legendary', {
+            name: '__legendary__',
+            value: '',
+            inline: false,
+        });
+
+        return embedMapTemplate;
+    }
+
     override async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         const numCards = interaction.options.getInteger('number');
 
         const frequency = pullCards(getCurrentRandomBanner(), numCards);
         const updatedGems = await addCharacters(interaction.user.id, frequency, 5 * numCards);
 
-        const updatedInventory = await fetchCards(interaction, frequency.keys().toArray());
+        const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));
 
-        const fieldsByRarity = new Map<
-            string,
-            {
-                name: string;
-                value: string;
-                inline?: boolean;
-            }
-        >();
+        const fieldsByRarity = this.createRarityMap();
 
         for (const item of updatedInventory) {
             const card = item.card;
 
             if (!fieldsByRarity.has(card.rarity)) {
+                console.log('whaaat');
                 fieldsByRarity.set(card.rarity, {
-                    name:
-                        card.rarity.slice(0, 1).toUpperCase() + card.rarity.slice(1).toLowerCase(),
+                    name: `__${card.rarity.slice(0, 1).toUpperCase() + card.rarity.slice(1).toLowerCase()}__`,
                     value: '',
                     inline: false,
                 });
             }
-            fieldsByRarity.get(card.rarity).value += `**${card.name}** x${item.quantity}`;
+            fieldsByRarity.get(card.rarity).value += `**${card.name}** x${item.quantity}\n`;
         }
         const embed = new EmbedBuilder()
             .setTitle(`You rolled ${numCards} times!`)
             .setDescription(`Gem Balance: ${updatedGems}`)
-            .addFields(fieldsByRarity.values().toArray());
+            .addFields(
+                // Filters out the ones that don't hae values
+                // JS maps maintain order...so the order should be fixed from when we made it
+                Array.from(fieldsByRarity.values()).filter(
+                    (embedObject) => embedObject.value !== '',
+                ),
+            );
 
         await interaction.reply({ embeds: [embed] });
     }

@@ -68,9 +68,9 @@ class RollManyCommand extends RollCommand {
 
         const fieldsByRarity = this.createRarityMap();
 
-        for (const item of updatedInventory) {
-            const card = item.card;
-
+        for (const [card, quantity] of frequency.entries()) {
+            // honestly i'm pretty confident that we won't have conflicts
+            // but maybe just in case?
             if (!fieldsByRarity.has(card.rarity)) {
                 console.log('whaaat');
                 fieldsByRarity.set(card.rarity, {
@@ -79,7 +79,7 @@ class RollManyCommand extends RollCommand {
                     inline: false,
                 });
             }
-            fieldsByRarity.get(card.rarity).value += `**${card.name}** x${item.quantity}\n`;
+            fieldsByRarity.get(card.rarity).value += `**${card.name}** x${quantity}\n`;
         }
         const embed = new EmbedBuilder()
             .setTitle(`You rolled ${numCards} times!`)

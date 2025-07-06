@@ -15,7 +15,7 @@ class InventoryCommand extends InventoryBase {
         super(new SlashCommandBuilder().setName('inventory').setDescription('See all your cards!'));
     }
 
-    // 🖼️ Function to create the embed for a specific page
+    // glorified builder
     private getInventoryEmbed(inventory: Inventory, index: number) {
         const card = inventory[index].card;
 
@@ -30,7 +30,7 @@ class InventoryCommand extends InventoryBase {
     override async execute(interaction: CommandInteraction, client: Client): Promise<void> {
         await interaction.deferReply({ ephemeral: false });
         // Build the inventory message
-        const data = await fetchInventory(interaction);
+        const inventory = await fetchInventory(interaction);
 
         let currentPage = 0;
 
@@ -44,47 +44,65 @@ class InventoryCommand extends InventoryBase {
             .setCustomId('next_item')
             .setLabel('Next ➡️')
             .setStyle(ButtonStyle.Primary)
-            .setDisabled(data.length <= 1);
+            .setDisabled(inventory.length <= 1);
 
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(backButton, nextButton);
 
-        const msg = await interaction.editReply({
-            embeds: [this.getInventoryEmbed(data, currentPage)],
+        const message = await interaction.editReply({
+            embeds: [this.getInventoryEmbed(inventory, currentPage)],
             components: [row],
         });
 
-        const collector = msg.createMessageComponentCollector({
-            time: 60_000, // 1 min
-        });
-
-        collector.on('collect', async (collectorInteraction) => {
-            if (interaction.user.id !== collectorInteraction.user.id) {
-                return collectorInteraction.reply({
-                    content: "This isn't your inventory!",
-                    ephemeral: true,
-                });
-            }
-
-            if (collectorInteraction.customId === 'next_item') {
-                currentPage++;
-            } else if (collectorInteraction.customId === 'prev_item') {
-                currentPage--;
-            } else {
-                console.log('invalid interaction?');
-            }
-            // Update buttons
+        // helper that refreshes button disabled state
+        const refreshButtons = () => {
             backButton.setDisabled(currentPage === 0);
-            nextButton.setDisabled(currentPage === data.length - 1);
+            nextButton.setDisabled(currentPage === inventory.length - 1);
+        };
+        const startCollector = () => {
+            refreshButtons();
 
-            const newEmbed = this.getInventoryEmbed(data, currentPage);
-            await interaction.editReply({ embeds: [newEmbed], components: [row] });
-        });
+            const collector = message.createMessageComponentCollector({
+                time: 60_000, // 60 s from (re)creation
+            });
 
-        collector.on('end', () => {
-            backButton.setDisabled(true);
-            nextButton.setDisabled(true);
-            msg.edit({ components: [row] }).catch(() => {});
-        });
+            collector.on('collect', async (collectorInteraction) => {
+                if (interaction.user.id !== collectorInteraction.user.id) {
+                    return collectorInteraction.reply({
+                        content: "This isn't your inventory!",
+                        ephemeral: true,
+                    });
+                }
+
+                if (
+                    collectorInteraction.customId === 'next_item' &&
+                    currentPage < inventory.length - 1
+                ) {
+                    currentPage++;
+                } else if (collectorInteraction.customId === 'prev_item' && currentPage > 0) {
+                    currentPage--;
+                } else {
+                    console.log('invalid interaction?');
+                }
+
+                // update buttons
+                refreshButtons();
+
+                const newEmbed = this.getInventoryEmbed(inventory, currentPage);
+                await collectorInteraction.update({ embeds: [newEmbed], components: [row] });
+
+                // Reset timer by killing & restarting collector
+                collector.stop(); // triggers 'end' immediately (reason: 'user')
+                startCollector(); // start fresh 60‑s window
+            });
+
+            collector.on('end', () => {
+                backButton.setDisabled(true);
+                nextButton.setDisabled(true);
+                message.edit({ components: [row] }).catch(() => {});
+            });
+        };
+
+        startCollector();
     }
 }
 

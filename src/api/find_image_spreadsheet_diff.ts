@@ -3,7 +3,7 @@ import path from 'path';
 import { getCache, getCard, loadCards } from '../get_cards';
 import Fuse from 'fuse.js';
 
-const IMAGE_DIR = './data/images';
+const IMAGE_DIR = './data/Anicards';
 
 export async function checkDiff() {
     await loadCards();
@@ -35,6 +35,8 @@ export async function checkDiff() {
         threshold: 0.4, // adjust for more or less strictness
     });
 
+    console.log("Here are the images that don't seem to have an associated card");
+
     // Check if the file name is contained within the spreadsheet cards
     for (const fileName of fileNames) {
         const card = getCard(fileName);
@@ -50,6 +52,9 @@ export async function checkDiff() {
             console.log('\n');
         }
     }
+
+    console.log('===========================');
+    console.log("Here are the cards that don't have a matching image");
 
     for (const cardName of cardNames) {
         if (!fileNames.includes(cardName)) {

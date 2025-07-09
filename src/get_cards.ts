@@ -62,8 +62,8 @@ export function getCard(identifier: string): Card | null {
     identifier = identifier.toLowerCase().trim();
 
     if (!cardCache.has(identifier)) {
-        console.log("BIG ERROR - HOW COME THIS DOESN'T EXIST");
-        console.log(identifier);
+        // console.log("BIG ERROR - HOW COME THIS DOESN'T EXIST");
+        // console.log(identifier);
         return;
     }
 

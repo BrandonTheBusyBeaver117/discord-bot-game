@@ -10,7 +10,7 @@ import prompt from 'prompt-sync';
 
 dotenv.config();
 
-const IMAGE_DIR = './data/images';
+const IMAGE_DIR = './data/Anicards';
 
 const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
 
@@ -24,11 +24,23 @@ cloudinary.config({
     api_secret: CLOUDINARY_API_SECRET,
 });
 
+async function imageExists(publicId: string): Promise<boolean> {
+    try {
+        await cloudinary.api.resource(publicId);
+        return true; // exists
+    } catch (error: any) {
+        if (error.http_code === 404) return false; // not found
+        // console.error('Error checking image existence:', error);
+        return false; // fail-safe: treat as not existing
+    }
+}
+
 async function uploadCardImage(filePath: string, imageName: string) {
     try {
         const result = await cloudinary.uploader.upload(filePath, {
             folder: 'images',
             public_id: imageName,
+            overwrite: true,
         });
         return result.secure_url;
     } catch (err) {
@@ -77,15 +89,26 @@ export async function batchUploadImages() {
             console.log(topMatches);
 
             //user input
-            const selectedIndex = input('which match? 0th indexing');
-            card = getCard(topMatches[selectedIndex]);
+            const selectedIndex = parseInt(input('which match? 0th indexing'));
+
+            // checks if valid int
+            if (!selectedIndex) {
+                card = getCard(topMatches[selectedIndex]);
+            }
 
             if (!card) {
                 console.log('uh yeah I have no clue');
                 continue;
             }
         }
+        const forceOverwriteList = new Set(['exampleid']);
 
+        // If the image already exists and shouldn't be overriden, we continue
+        if (imageExists(card.id) && !forceOverwriteList.has(card.id)) {
+            continue;
+        }
+
+        console.log('trying ' + card.name);
         await uploadCardImage(filePath, card.id);
         console.log(imageName);
     }

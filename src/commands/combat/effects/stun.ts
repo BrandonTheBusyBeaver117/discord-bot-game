@@ -14,6 +14,10 @@ export class Stun extends StatusEffect {
         this.user.flags.skipTurn = true;
     }
 
+    override beforeMove(): void {
+        this.user.flags.skipTurn = true;
+    }
+
     override onTurnEnd(): void {
         if (this.user.flags.skipTurn) {
             this.user.flags.skipTurn = false;

@@ -1,4 +1,6 @@
 import { supabase } from '../..';
+import { StatusEffectClassMap } from './effects/effects';
+import { StatusEffect } from './effects/status_effect_base';
 
 export interface Stats {
     health: number;
@@ -28,7 +30,7 @@ const effectType = {
 interface CombatantConfig {
     name: string;
     stats: Stats;
-    statusEffects?: StatusEffectInstance[];
+    statusEffects?: StatusEffect[];
     flags?: Flags;
     teamId: string;
 }
@@ -37,7 +39,7 @@ export class Combatant {
     name: string;
     baseStats: Stats;
     currentStats: Stats;
-    statusEffects: StatusEffectInstance[];
+    statusEffects: StatusEffect[];
     flags: Flags;
     teamId: string;
 
@@ -119,173 +121,25 @@ export interface Flags {
     canCopy?: boolean;
 }
 
-// For status conditions like Burn, Bleed, Confuse, etc.
-
-export class StatusEffect {
-    name: string;
-    user: Combatant;
-    expiresOn: 'startTurn' | 'endTurn' | 'afterUses' | 'immediate';
-    duration: number;
-    appliedTurn: number;
-    expired: boolean;
-
-    // Lifecycle hooks
-    onApply?: () => void;
-    onExpire?: () => void;
-
-    onTurnStart?: () => void;
-    onTurnEnd?: () => void;
-
-    beforeAction?: () => void;
-    afterAction?: () => void;
-
-    beforeMove?: () => void;
-    afterMove?: () => void;
-
-    beforeReceiveHit?: () => void;
-    afterReceiveHit?: () => void;
-
-    constructor(config: StatusEffectConfig, user: Combatant) {
-        this.name = config.name;
-        this.expiresOn = config.expiresOn;
-        this.duration = config.duration ?? 0;
-        this.appliedTurn = config.appliedTurn ?? 0;
-        this.user = user;
-
-        // Assign all optional hooks if present
-        this.onApply = () => config.onApply(user, forceExpire);
-        this.onExpire = config.onExpire;
-
-        this.onTurnStart = config.onTurnStart;
-        this.onTurnEnd = config.onTurnEnd;
-
-        this.beforeAction = config.beforeAction;
-        this.afterAction = config.afterAction;
-
-        this.beforeMove = config.beforeMove;
-        this.afterMove = config.afterMove;
-
-        this.beforeReceiveHit = config.beforeReceiveHit;
-        this.afterReceiveHit = config.afterReceiveHit;
-    }
-
-    tick(): void {
-        if (this.duration <= 0) {
-            this.expired = true;
-        }
-
-        if (this.expired) {
-            this.onExpire(this.user);
-        }
-    }
-
-    forceExpire(): void {
-        this.expired = true;
-    }
-}
-export interface StatusEffectConfig {
-    name: string; // e.g. "Burn"
-    expiresOn: 'startTurn' | 'endTurn' | 'afterUses' | 'immediate';
-    duration?: number;
-    appliedTurn?: number;
-
-    // Any immediate effects or cleanup
-    onApply?(user: Combatant, forceExpire: () => void): void;
-    onExpire?(user: Combatant): void;
-
-    // For all teams at turn start/end
-    onTurnStart?(user: Combatant, forceExpire: () => void): void;
-    onTurnEnd?(user: Combatant, forceExpire: () => void): void;
-
-    // Before actually selecting the move
-    // Mostly for skipturn
-    beforeAction?(user: Combatant, forceExpire: () => void): void;
-    afterAction?(user: Combatant, forceExpire: () => void): void;
-
-    // Your actual attack
-    // Ik it's a little confusing but whether to apply the move's effect
-    // Before the actual hit itself, or after we've made the move
-    beforeMove?(user: Combatant, forceExpire: () => void): void;
-    afterMove?(user: Combatant, forceExpire: () => void): void;
-
-    // Defense
-    beforeReceiveHit?(user: Combatant, forceExpire: () => void): void;
-    afterReceiveHit?(user: Combatant, forceExpire: () => void): void;
-
-    tick(): void;
-}
-
-export interface BattleState {
+export class BattleState {
+    phases: ['start_turn', 'action'];
     turn: number;
     teams: {
-        [teamId: string]: Combatant[];
+        a: Combatant[];
+        b: Combatant[];
     };
     activeCombatants: Combatant[];
+    allCombatants: Combatant[];
     log: string[];
-}
 
-// This should be from the perspective that YOU have this effect
-export function processEffect(effect: string, user: Combatant): void {
-    switch (effect.toLowerCase()) {
-        // health
-        case 'regenerate':
-            user.addFromBaseStat('health', 0.3);
-            break;
-        case 'bleed':
-        case 'shock':
-            user.addFromBaseStat('health', -0.1);
-            break;
-        case 'burn':
-            user.addFromBaseStat('health', -0.3);
+    constructor(teamA: Combatant[], teamB: Combatant[]) {
+        this.allCombatants = [...teamA, ...teamB];
+        this.teams = {
+            a: [...teamA],
+            b: [...teamB],
+        };
 
-            break;
-        case 'fortify':
-            // blocks 5% of damage
-            user.addFromBaseStat('defense', 0.05);
-            break;
-
-        // buffs
-        case 'critical':
-            // 250% of normal damage
-            user.addFromBaseStat('damage', 1.5);
-            break;
-
-        case 'luck':
-            user.addFromBaseStat('accuracy', 0.5);
-            break;
-
-        case 'accel':
-            user.addFromBaseStat('speed', 0.2);
-            break;
-
-        case 'buff':
-            user.addFromBaseStat('damage', 0.2);
-            break;
-
-        case 'immune':
-            user.flags.isImmune = true;
-            break;
-        case 'copy':
-            user.flags.canCopy = true;
-            break;
-        // debuffs
-
-        case 'slow':
-            user.addFromBaseStat('speed', -0.2);
-            break;
-
-        case 'weaken':
-            user.addFromBaseStat('damage', -0.2);
-            break;
-
-        case 'confuse':
-            user.addFromBaseStat('accuracy', -0.33);
-            break;
-
-        case 'stun':
-            user.flags.skipTurn = true;
-
-        default:
+        this.turn = 0;
     }
 }
 
@@ -295,173 +149,82 @@ export function applyStatusEffect(
     opponent: Combatant,
     battleState: BattleState,
 ): void {
-    switch (effect.toLowerCase()) {
-        case 'bleed':
-        case 'shock':
-        case 'burn':
-            opponent.statusEffects.push({
-                name: effect,
-                duration: 2,
-                expiresOn: 'endTurn',
-            });
-            break;
-        case 'summon':
-            battleState.teams[user.teamId].push(
-                new Spirit({
-                    name: 'cursed summon',
+    effect = effect.toLowerCase();
 
-                    stats: { ...user.baseStats, health: 3, damage: 0.2 * user.baseStats.damage },
+    if (effect == 'summon') {
+        battleState.teams[user.teamId].push(
+            new Spirit({
+                name: 'cursed summon',
 
-                    statusEffects: [], // effects currently applied
-                    flags: {
-                        isImmune: true,
-                        summonedBy: user.name,
-                    },
+                stats: { ...user.baseStats, health: 3, damage: 0.2 * user.baseStats.damage },
 
-                    teamId: user.teamId,
-                }),
-            );
-            break;
+                statusEffects: [], // effects currently applied
+                flags: {
+                    isImmune: true,
+                    summonedBy: user.name,
+                },
 
-        case 'regenerate':
-            user.statusEffects.push({
-                name: effect,
-                expiresOn: 'immediate',
-                onApply: (combatant) => combatant.addFromBaseStat('health', 0.3),
-            });
-
-            break;
-        case 'fortify':
-            user.statusEffects.push({
-                name: effect,
-                duration: 2,
-                expiresOn: 'endTurn',
-                onApply: (combatant) => combatant.addFromBaseStat('defense', 0.3),
-            });
-        case 'critical':
-            user.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'immediate',
-                onApply: (combatant) => combatant.addFromBaseStat('damage', 1.5),
-            });
-            break;
-        case 'luck':
-            user.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'immediate',
-                onApply: (combatant) => combatant.addFromBaseStat('accuracy', 0.5),
-            });
-            break;
-        case 'accel':
-            user.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'startTurn',
-
-                beforeAction: (combatant) => combatant.addFromBaseStat('speed', 0.2),
-            });
-            break;
-        case 'buff':
-            user.statusEffects.push({
-                name: effect,
-                expiresOn: 'immediate',
-                onApply: (combatant) => combatant.addFromBaseStat('damage', 0.2),
-            });
-            break;
-        case 'immune':
-            user.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'afterUses',
-                onApply: (combatant) => (combatant.flags.isImmune = true),
-                onExpire: (combatant) => (combatant.flags.isImmune = false),
-            });
-            break;
-        case 'copy':
-            user.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'endTurn',
-            });
-            break;
-
-        case 'stun':
-            opponent.statusEffects.push({
-                name: effect,
-                expiresOn: 'afterUses',
-                duration: 1,
-
-                beforeAction: (combatant) => (combatant.flags.skipTurn = true),
-                afterAction: (combatant) => (combatant.flags.skipTurn = false),
-            });
-            break;
-        case 'slow':
-            opponent.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'turn',
-            });
-            break;
-        case 'weaken':
-            opponent.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'turn',
-            });
-            break;
-        case 'confuse':
-            opponent.statusEffects.push({
-                name: effect,
-                duration: 1,
-                expiresOn: 'turn',
-            });
-            break;
-        default:
+                teamId: user.teamId,
+            }),
+        );
+        return;
     }
+
+    const statusEffectGenerator = StatusEffectClassMap[effect.toLowerCase()];
+
+    user.statusEffects.push(statusEffectGenerator(user, opponent));
 }
 function processTurn(battleState: BattleState, move: Move) {
-    // So far nothing is uh start of turn so just leaving this here
-    // // Apply start-of-turn effects (e.g., burn, regen)
-    // applyStatusEffects(combatant, 'start');
+    // Turn Starts
+    // Resetting active combatants
+    battleState.activeCombatants = [];
 
-    Object.values(battleState.teams).forEach((combatantArray) => {
-        // will filter out combatants that are meant to skip this turn
-        // Or also dead lmao
-        const filteredCombatants = combatantArray.filter(
-            (combatant) => !combatant.flags.skipTurn || combatant.isAlive(),
-        );
+    battleState.allCombatants.forEach((combatant) => {
+        // Tick all start turn effects
+        combatant.statusEffects.forEach((effect) => effect.tick('startTurn'));
 
-        battleState.activeCombatants.push(...filteredCombatants);
+        // If alive and turn is not skipped, you are an active combatant
+        if (!combatant.flags.skipTurn && combatant.isAlive()) {
+            battleState.activeCombatants.push(combatant);
+        }
     });
 
     // Puts largest speed stat first
     battleState.activeCombatants.sort((a, b) => b.currentStats.speed - a.currentStats.speed);
 
+    // ========================================================
+    // Choose Moves
+
+    battleState.allCombatants.forEach((combatant) => {
+        // Tick all before action effects
+        combatant.statusEffects.forEach((effect) => effect.tick('beforeAction'));
+    });
+
+    // Now we get moves or wtv
+    // const moves = Move
+
+    // ========================================================
+    // Execute Moves
+
     battleState.activeCombatants.forEach((combatant) => {
         // // Choose move (manual or AI/autoplay)
         // const chosenMove = chooseMove(combatant);
+
+        combatant.statusEffects.forEach((effect) => effect.tick('beforeMove'));
+
         // // Execute move
         // executeMove(chosenMove, combatant, target, battleState);
+
+        combatant.statusEffects.forEach((effect) => effect.tick('afterMove'));
     });
+
+    // ========================================================
+    // End of turn
 
     // Apply end-of-turn effects
-    battleState.activeCombatants.forEach((combatant) => {
-        // Cause like, these should all be end of turn...
-        combatant.statusEffects.forEach((statusEffect) => {
-            processEffect(statusEffect.name, combatant);
-            statusEffect.duration -= 1;
-        });
-
-        // Get rid of effects that have 0 or less turns remaining
-        combatant.statusEffects = combatant.statusEffects.filter(
-            (statusEffect) => !(statusEffect.duration <= 0),
-        );
+    battleState.allCombatants.forEach((combatant) => {
+        combatant.statusEffects.forEach((effect) => effect.tick('endTurn'));
     });
-
-    // Update status effect durations
-    // updateStatusDurations(combatant);
 }
 
 function executeMove(move: Move, user: Combatant, opponent: Combatant, battleState: BattleState) {
@@ -469,8 +232,8 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
 
     switch (move.target) {
         case 'global':
-            battleState.teams[opponent.teamId].forEach((enemy) => {
-                executeMove({ ...move, target: 'single' }, user, enemy, battleState);
+            battleState.teams[opponent.teamId].forEach((opponent) => {
+                executeMove({ ...move, target: 'single' }, user, opponent, battleState);
             });
 
             break;

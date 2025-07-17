@@ -1,7 +1,7 @@
 import { Combatant } from '../combat_util';
 import { StatusEffect } from './status_effect_base';
 
-export class Critical extends StatusEffect {
+export class Immune extends StatusEffect {
     constructor(user: Combatant) {
         super({ user: user, name: 'immune', expiresOn: 'afterUses', duration: 1 });
     }

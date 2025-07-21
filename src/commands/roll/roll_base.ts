@@ -1,5 +1,5 @@
 import CommandBase from '../command_base';
 
-class RollCommand extends CommandBase {}
+class RollBase extends CommandBase {}
 
-export default RollCommand;
+export default RollBase;

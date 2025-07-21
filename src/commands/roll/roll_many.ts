@@ -3,9 +3,9 @@ import { ChatInputCommandInteraction } from 'discord.js';
 
 import { getCurrentRandomBanner } from '../../banner';
 
-import RollCommand from './roll_base';
 import { pullCards, addCharacters } from './roll_util';
 import { fetchCards } from '../inventory/inventory_util';
+import RollBase from './roll_base';
 
 type EmbedItem = {
     name: string;
@@ -13,7 +13,7 @@ type EmbedItem = {
     inline?: boolean;
 };
 
-class RollManyCommand extends RollCommand {
+class RollManyCommand extends RollBase {
     constructor() {
         super(
             new SlashCommandBuilder()

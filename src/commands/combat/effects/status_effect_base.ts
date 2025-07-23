@@ -46,10 +46,10 @@ export class StatusEffect {
     onTurnStart(): void {}
     onTurnEnd(): void {}
 
-    // Before actually selecting the move
-    // Mostly for skipturn
-    beforeAction(): void {}
-    afterAction(): void {}
+    // // Before actually selecting the move
+    // // Mostly for skipturn
+    // beforeAction(): void {}
+    // afterAction(): void {}
 
     // Your actual attack
     // Ik it's a little confusing but whether to apply the move's effect
@@ -72,12 +72,6 @@ export class StatusEffect {
                 break;
             case 'endTurn':
                 this.onTurnEnd();
-                break;
-            case 'beforeAction':
-                this.beforeAction();
-                break;
-            case 'afterAction':
-                this.afterAction();
                 break;
             case 'beforeMove':
                 this.beforeMove();

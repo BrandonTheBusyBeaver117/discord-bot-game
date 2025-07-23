@@ -6,9 +6,9 @@ export class Stun extends StatusEffect {
         super({ user: user, name: 'stun', expiresOn: 'manual' });
     }
 
-    override beforeAction(): void {
-        this.user.flags.skipTurn = true;
-    }
+    // override beforeAction(): void {
+    //     this.user.flags.skipTurn = true;
+    // }
 
     override onTurnStart(): void {
         this.user.flags.skipTurn = true;

@@ -1,5 +1,6 @@
+import { stringify } from 'querystring';
 import { supabase } from '../..';
-import { StatusEffectClassMap } from './effects/effects';
+import { getEffect } from './effects/effects';
 import { StatusEffect } from './effects/status_effect_base';
 
 export interface Stats {
@@ -33,6 +34,7 @@ interface CombatantConfig {
     statusEffects?: StatusEffect[];
     flags?: Flags;
     teamId: string;
+    moves: Move[];
 }
 
 export class Combatant {
@@ -42,6 +44,8 @@ export class Combatant {
     statusEffects: StatusEffect[];
     flags: Flags;
     teamId: string;
+    moves: Move[];
+    uuid: string;
 
     public constructor(config: CombatantConfig) {
         this.name = config.name;
@@ -50,10 +54,22 @@ export class Combatant {
         this.statusEffects = config.statusEffects ?? [];
         this.flags = config.flags ?? {};
         this.teamId = config.teamId;
+        this.moves = config.moves;
+
+        // Kinda cursed but works
+        // The unique identifier is just name + teamid
+        // IF it alr exists that's a big no no, but we should check for duplicates outside this
+        this.uuid = this.name + this.teamId;
     }
 
     isAlive(): boolean {
         return this.currentStats.health > 0;
+    }
+
+    canAct(): boolean {
+        // To be active, your turn is not skipped
+        // AND you are alive
+        return !this.flags.skipTurn && this.isAlive();
     }
 
     forceSetStat(stat: keyof Stats, newStat: number) {
@@ -88,7 +104,12 @@ export class Combatant {
         return true;
     }
 
-    endOfTurn() {}
+    endOfTurn() {
+        this.currentStats = {
+            ...this.baseStats,
+            health: this.currentStats.health,
+        };
+    }
 }
 
 export class Spirit extends Combatant {
@@ -128,7 +149,6 @@ export class BattleState {
         a: Combatant[];
         b: Combatant[];
     };
-    activeCombatants: Combatant[];
     allCombatants: Combatant[];
     log: string[];
 
@@ -163,6 +183,17 @@ export function applyStatusEffect(
                     isImmune: true,
                     summonedBy: user.name,
                 },
+                moves: [
+                    {
+                        name: 'haunt',
+                        type: 'ghost',
+                        damage: 1,
+                        copy: false,
+                        accuracy: 1,
+                        effects: [],
+                        target: 'single',
+                    },
+                ],
 
                 teamId: user.teamId,
             }),
@@ -170,61 +201,141 @@ export function applyStatusEffect(
         return;
     }
 
-    const statusEffectGenerator = StatusEffectClassMap[effect.toLowerCase()];
-
-    user.statusEffects.push(statusEffectGenerator(user, opponent));
+    user.statusEffects.push(getEffect(effect.toLowerCase(), user, opponent));
 }
-function processTurn(battleState: BattleState, move: Move) {
-    // Turn Starts
-    // Resetting active combatants
-    battleState.activeCombatants = [];
 
-    battleState.allCombatants.forEach((combatant) => {
-        // Tick all start turn effects
-        combatant.statusEffects.forEach((effect) => effect.tick('startTurn'));
+function buildTurnQueue(combatants: Combatant[]) {
+    return combatants
+        .filter((combatant) => combatant.canAct())
+        .sort((a, b) => b.currentStats.speed - a.currentStats.speed);
+}
 
-        // If alive and turn is not skipped, you are an active combatant
-        if (!combatant.flags.skipTurn && combatant.isAlive()) {
-            battleState.activeCombatants.push(combatant);
+type PossibleWinners = 'draw' | 'a' | 'b';
+export class Battle {
+    battleState: BattleState;
+    uponWinning: (winningTeam: string) => any;
+
+    constructor(state: BattleState, uponWinning: (winningTeam: string) => any) {
+        this.battleState = state;
+        this.uponWinning = uponWinning;
+    }
+
+    processTurn(
+        moveSupplier: (combatant: Combatant) => Move,
+        opponentSupplier: (combatant: Combatant) => Combatant,
+    ) {
+        // Turn Starts
+        // Resetting active combatants
+
+        this.battleState.allCombatants.forEach((combatant) => {
+            // Tick all start turn effects
+            combatant.statusEffects.forEach((effect) => effect.tick('startTurn'));
+        });
+
+        console.log('tick start');
+
+        // technically faster than having combatant as the key...?
+        const moveMap: Map<string, Move> = new Map();
+        const opponentMap: Map<string, Combatant> = new Map();
+
+        let queue: Combatant[] = buildTurnQueue(this.battleState.allCombatants);
+
+        // ========================================================
+        // Select Moves
+        queue.forEach((combatant) => {
+            // This hopefully allows for flexibility in how moves and opponents are actually chosen
+
+            opponentMap.set(combatant.uuid, opponentSupplier(combatant));
+            moveMap.set(combatant.uuid, moveSupplier(combatant));
+        });
+
+        // ========================================================
+        // Execute Moves
+
+        console.log('execution');
+        while (queue.length > 0) {
+            // Finds the fastest combatant
+            const combatant = queue[0];
+
+            combatant.statusEffects.forEach((effect) => effect.tick('beforeMove'));
+
+            executeMove(
+                moveMap.get(combatant.uuid),
+                combatant,
+                opponentMap.get(combatant.uuid),
+                this.battleState,
+            );
+
+            combatant.statusEffects.forEach((effect) => effect.tick('afterMove'));
+
+            // The only downside of this approach is that if you are taken out of the queue
+            // You cannot be put back in
+            // idk, we can cross the bridge of cleansing stuns or revivals later
+            queue.shift();
+
+            queue = buildTurnQueue(queue);
         }
-    });
 
-    // Puts largest speed stat first
-    battleState.activeCombatants.sort((a, b) => b.currentStats.speed - a.currentStats.speed);
+        // ========================================================
+        // End of turn
 
-    // ========================================================
-    // Choose Moves
+        // Apply end-of-turn effects
+        this.battleState.allCombatants.forEach((combatant) => {
+            combatant.statusEffects.forEach((effect) => effect.tick('endTurn'));
+        });
 
-    battleState.allCombatants.forEach((combatant) => {
-        // Tick all before action effects
-        combatant.statusEffects.forEach((effect) => effect.tick('beforeAction'));
-    });
+        console.log('Team a:');
+        this.battleState.teams.a.forEach((combatant) => {
+            console.log(`${combatant.name} health: ${combatant.currentStats.health}`);
+        });
 
-    // Now we get moves or wtv
-    // const moves = Move
+        console.log('\nTeam b:');
+        this.battleState.teams.b.forEach((combatant) => {
+            console.log(`${combatant.name} health: ${combatant.currentStats.health}`);
+        });
 
-    // ========================================================
-    // Execute Moves
+        const winningTeam = this.checkWinningTeam();
+        if (winningTeam) {
+            this.uponWinning(winningTeam);
+        }
+    }
 
-    battleState.activeCombatants.forEach((combatant) => {
-        // // Choose move (manual or AI/autoplay)
-        // const chosenMove = chooseMove(combatant);
+    checkWinningTeam(): PossibleWinners | false {
+        let teamAAlive = false;
+        let teamBAlive = false;
+        this.battleState.teams.a.forEach(
+            (combatant) =>
+                // will only flip true if combatant is alive
+                (teamAAlive = teamAAlive || combatant.isAlive()),
+        );
 
-        combatant.statusEffects.forEach((effect) => effect.tick('beforeMove'));
+        this.battleState.teams.b.forEach(
+            (combatant) =>
+                // will only flip true if combatant is alive
+                (teamBAlive = teamBAlive || combatant.isAlive()),
+        );
 
-        // // Execute move
-        // executeMove(chosenMove, combatant, target, battleState);
+        // So at the end, if alive is false, then no one would have been alive, and we have a winner
 
-        combatant.statusEffects.forEach((effect) => effect.tick('afterMove'));
-    });
+        // If both dead, we draw
+        if (teamAAlive == false && teamBAlive == false) {
+            return 'draw';
+        }
 
-    // ========================================================
-    // End of turn
+        if (teamAAlive == false) {
+            return 'b';
+        }
 
-    // Apply end-of-turn effects
-    battleState.allCombatants.forEach((combatant) => {
-        combatant.statusEffects.forEach((effect) => effect.tick('endTurn'));
-    });
+        if (teamBAlive == false) {
+            return 'a';
+        }
+
+        // If all those failed, none must be dead
+
+        return false;
+    }
+
+    getMoves() {}
 }
 
 function executeMove(move: Move, user: Combatant, opponent: Combatant, battleState: BattleState) {
@@ -250,25 +361,37 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
                     battleState,
                 );
             }
+            break;
 
         case 'single':
             for (const effect of move.effects) {
                 applyStatusEffect(effect, user, opponent, battleState);
             }
 
-            if (Math.random() > move.accuracy * user.currentStats.accuracy) {
-                console.log(`${user.name} missed!`);
+            // if (Math.random() > move.accuracy * user.currentStats.accuracy) {
+            //     console.log(`${user.name} missed!`);
+            //     return;
+            // }
 
-                opponent.addToStat('health', -move.damage);
+            console.log(
+                user.name +
+                    ' uses ' +
+                    move.name +
+                    ' on ' +
+                    opponent.name +
+                    ' it does ' +
+                    move.damage +
+                    'damage',
+            );
 
-                // If the opponent can copy, and the current move isn't a copy, then copy
-                // imo this should be counter but wtv
-                if (opponent.flags.canCopy && move.copy === false) {
-                    executeMove({ ...move, copy: true }, opponent, user, battleState);
-                }
-                return;
+            opponent.addToStat('health', -move.damage);
+
+            // If the opponent can act, can copy, and the current move isn't a copy, then copy
+            // imo this should be counter but wtv
+            if ((opponent.canAct(), opponent.flags.canCopy && move.copy === false)) {
+                executeMove({ ...move, copy: true }, opponent, user, battleState);
             }
-
+            break;
         default:
             console.log('what the');
     }

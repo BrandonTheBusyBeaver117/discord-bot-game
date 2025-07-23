@@ -27,7 +27,9 @@ const runSimulation = () => {
         // The opposing team is just the other
         const opposingTeamId = combatant.teamId === 'a' ? 'b' : 'a';
 
-        const opposingTeam = battleState.teams[opposingTeamId];
+        const opposingTeam = battleState.teams[opposingTeamId].filter((combatant) =>
+            combatant.isAlive(),
+        );
 
         const randIndex = Math.floor(Math.random() * opposingTeam.length);
 

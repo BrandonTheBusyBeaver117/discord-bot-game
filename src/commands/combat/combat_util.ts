@@ -109,6 +109,8 @@ export class Combatant {
             ...this.baseStats,
             health: this.currentStats.health,
         };
+
+        this.statusEffects = this.statusEffects.filter((effect) => !effect.expired);
     }
 }
 
@@ -274,6 +276,8 @@ export class Battle {
             queue.shift();
 
             queue = buildTurnQueue(queue);
+            console.log('updated quque');
+            console.log(queue.map((combatant) => combatant.uuid));
         }
 
         // ========================================================
@@ -282,6 +286,8 @@ export class Battle {
         // Apply end-of-turn effects
         this.battleState.allCombatants.forEach((combatant) => {
             combatant.statusEffects.forEach((effect) => effect.tick('endTurn'));
+
+            combatant.endOfTurn();
         });
 
         console.log('Team a:');
@@ -364,14 +370,14 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
             break;
 
         case 'single':
+            if (Math.random() > move.accuracy * user.currentStats.accuracy) {
+                console.log(`${user.name} missed!`);
+                return;
+            }
+
             for (const effect of move.effects) {
                 applyStatusEffect(effect, user, opponent, battleState);
             }
-
-            // if (Math.random() > move.accuracy * user.currentStats.accuracy) {
-            //     console.log(`${user.name} missed!`);
-            //     return;
-            // }
 
             console.log(
                 user.name +
@@ -386,9 +392,15 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
 
             opponent.addToStat('health', -move.damage);
 
+            if (opponent.name == 'Zephyr') {
+                console.log(opponent.flags.canCopy);
+                console.log(opponent.canAct());
+                console.log(move.copy === false);
+            }
+
             // If the opponent can act, can copy, and the current move isn't a copy, then copy
             // imo this should be counter but wtv
-            if ((opponent.canAct(), opponent.flags.canCopy && move.copy === false)) {
+            if (opponent.canAct() && opponent.flags.canCopy && move.copy === false) {
                 executeMove({ ...move, copy: true }, opponent, user, battleState);
             }
             break;

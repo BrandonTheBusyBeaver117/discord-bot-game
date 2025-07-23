@@ -90,6 +90,10 @@ export class StatusEffect {
         }
         if (phase === this.expiresOn) {
             this.tickDuration();
+
+            console.log(this.name + ' has ticked for' + this.user.name);
+            console.log(phase);
+            console.log(this.duration);
         }
     }
 
@@ -101,6 +105,7 @@ export class StatusEffect {
     }
 
     setExpired(): void {
+        console.log(this.name + 'has expired');
         this.expired = true;
         this.onExpire();
     }

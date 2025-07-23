@@ -50,6 +50,7 @@ export const getEffect = (name: string, user: Combatant, opponent: Combatant): S
         case 'luck':
             return new Luck(user);
         case 'accel':
+        case 'accelerate':
             return new Accelerate(user);
         case 'buff':
             return new Buff(user);

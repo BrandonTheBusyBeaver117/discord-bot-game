@@ -43,7 +43,7 @@ const move_pool: Move[] = [
         damage: 30,
         effects: ['luck'],
         target: 'single',
-        copy: true,
+        copy: false,
         accuracy: 0.9,
     },
     {
@@ -68,9 +68,9 @@ const move_pool: Move[] = [
         name: 'Heal Pulse',
         type: 'light',
         damage: 0,
-        effects: ['heal'],
+        effects: ['regenerate'],
         target: 'single',
-        copy: true,
+        copy: false,
         accuracy: 1.0,
     },
     {
@@ -184,12 +184,12 @@ export const combatants: Combatant[] = [
     }),
     new Combatant({
         name: 'Zephyr',
-        stats: { health: 85, damage: 18, defense: 10, speed: 50, accuracy: 1 },
+        stats: { health: 8500, damage: 18, defense: 10, speed: 50, accuracy: 1 },
         teamId: 'a',
         moves: [
-            { ...move_pool[0] }, // Quick Slice
-            { ...move_pool[5] }, // Wind Step
-            { ...move_pool[7] }, // Heal Pulse
+            // { ...move_pool[0] }, // Quick Slice
+            // { ...move_pool[5] }, // Wind Step
+            // { ...move_pool[7] }, // Heal Pulse
             { ...move_pool[2] }, // Copycat
         ],
     }),

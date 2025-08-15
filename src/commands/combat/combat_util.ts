@@ -223,8 +223,8 @@ export class Battle {
     }
 
     processTurn(
-        moveSupplier: (combatant: Combatant) => Move,
-        opponentSupplier: (combatant: Combatant) => Combatant,
+        moveMapSupplier: (combatants: Combatant[]) => Map<string, Move>,
+        opponentMapSupplier: (combatants: Combatant[]) => Map<string, Combatant>,
     ) {
         // Turn Starts
         // Resetting active combatants
@@ -236,20 +236,13 @@ export class Battle {
 
         console.log('tick start');
 
-        // technically faster than having combatant as the key...?
-        const moveMap: Map<string, Move> = new Map();
-        const opponentMap: Map<string, Combatant> = new Map();
-
         let queue: Combatant[] = buildTurnQueue(this.battleState.allCombatants);
 
         // ========================================================
         // Select Moves
-        queue.forEach((combatant) => {
-            // This hopefully allows for flexibility in how moves and opponents are actually chosen
 
-            opponentMap.set(combatant.uuid, opponentSupplier(combatant));
-            moveMap.set(combatant.uuid, moveSupplier(combatant));
-        });
+        const moveMap: Map<string, Move> = moveMapSupplier(queue);
+        const opponentMap: Map<string, Combatant> = opponentMapSupplier(queue);
 
         // ========================================================
         // Execute Moves

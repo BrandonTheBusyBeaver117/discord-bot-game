@@ -1,4 +1,4 @@
-import { Battle, BattleState, Combatant } from './combat_util';
+import { Battle, BattleState, Combatant, Move } from './combat_util';
 import { combatants } from './simulator_constants';
 
 const runSimulation = () => {
@@ -14,26 +14,36 @@ const runSimulation = () => {
         return true;
     };
 
-    const moveSupplier = (combatant: Combatant) => {
-        const randIndex = Math.floor(Math.random() * combatant.moves.length);
+    const moveMapSupplier = (combatants: Combatant[]): Map<string, Move> => {
+        const moveMap = new Map<string, Move>();
 
-        return combatant.moves[randIndex];
+        combatants.forEach((combatant) => {
+            const randIndex = Math.floor(Math.random() * combatant.moves.length);
+            moveMap.set(combatant.uuid, combatant.moves[randIndex]);
+        });
+
+        return moveMap;
     };
 
-    const opponentSupplier = (combatant: Combatant) => {
+    const opponentMapSupplier = (combatants: Combatant[]): Map<string, Combatant> => {
         // This implementation doesn't really need uuid ngl
         // Let's just target random people lmao
 
-        // The opposing team is just the other
-        const opposingTeamId = combatant.teamId === 'a' ? 'b' : 'a';
+        const opponentMap = new Map<string, Combatant>();
 
-        const opposingTeam = battleState.teams[opposingTeamId].filter((combatant) =>
-            combatant.isAlive(),
-        );
+        const aliveTeamAMembers = battleState.teams.a.filter((combatant) => combatant.isAlive());
+        const aliveTeamBMembers = battleState.teams.b.filter((combatant) => combatant.isAlive());
 
-        const randIndex = Math.floor(Math.random() * opposingTeam.length);
+        combatants.forEach((combatant) => {
+            // The opposing team is just the other
+            const opposingTeam = combatant.teamId === 'a' ? aliveTeamBMembers : aliveTeamAMembers;
 
-        return opposingTeam[randIndex];
+            const randIndex = Math.floor(Math.random() * opposingTeam.length);
+
+            opponentMap.set(combatant.uuid, opposingTeam[randIndex]);
+        });
+
+        return opponentMap;
     };
 
     const battle = new Battle(battleState, uponWinning);
@@ -41,7 +51,7 @@ const runSimulation = () => {
     let turn = 1;
     while (stop == false) {
         console.log('turn ' + turn);
-        battle.processTurn((combatant) => moveSupplier(combatant), opponentSupplier);
+        battle.processTurn(moveMapSupplier, opponentMapSupplier);
         turn++;
     }
     console.log('we done');

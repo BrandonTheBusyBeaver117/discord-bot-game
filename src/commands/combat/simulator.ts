@@ -51,7 +51,12 @@ const runSimulation = () => {
     let turn = 1;
     while (stop == false) {
         console.log('turn ' + turn);
-        battle.processTurn(moveMapSupplier, opponentMapSupplier);
+
+        // we have to use promise.resolve bc processTurn expects an async func
+        battle.processTurn(
+            (queue) => Promise.resolve(moveMapSupplier(queue)),
+            (queue) => Promise.resolve(opponentMapSupplier(queue)),
+        );
         turn++;
     }
     console.log('we done');

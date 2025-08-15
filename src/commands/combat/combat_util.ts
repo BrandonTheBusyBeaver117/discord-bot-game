@@ -222,9 +222,9 @@ export class Battle {
         this.uponWinning = uponWinning;
     }
 
-    processTurn(
-        moveMapSupplier: (combatants: Combatant[]) => Map<string, Move>,
-        opponentMapSupplier: (combatants: Combatant[]) => Map<string, Combatant>,
+    async processTurn(
+        moveMapSupplier: (combatants: Combatant[]) => Promise<Map<string, Move>>,
+        opponentMapSupplier: (combatants: Combatant[]) => Promise<Map<string, Combatant>>,
     ) {
         // Turn Starts
         // Resetting active combatants
@@ -241,8 +241,8 @@ export class Battle {
         // ========================================================
         // Select Moves
 
-        const moveMap: Map<string, Move> = moveMapSupplier(queue);
-        const opponentMap: Map<string, Combatant> = opponentMapSupplier(queue);
+        const moveMap: Map<string, Move> = await moveMapSupplier(queue);
+        const opponentMap: Map<string, Combatant> = await opponentMapSupplier(queue);
 
         // ========================================================
         // Execute Moves

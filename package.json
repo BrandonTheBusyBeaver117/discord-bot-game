@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "description": "A new discord game!",
     "main": "index.js",
+    "engines": {
+        "node": ">=22.0.0"
+    },
     "scripts": {
         "script": "npm run build && node build/run_script.js",
         "start": "node build/index.js",

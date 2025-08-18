@@ -12,7 +12,8 @@
         "deploy-commands": "npm run build && node build/deploy-commands",
         "clean": "rimraf build",
         "build": "npm run clean && tsc",
-        "pretty": "prettier --write \"./**/*.{ts}\""
+        "pretty": "prettier --write \"src/**/*.{ts,js,jsx,json,md}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,js,jsx,json,md}\""
     },
     "author": "busybeaver",
     "license": "ISC",

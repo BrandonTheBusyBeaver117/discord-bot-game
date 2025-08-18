@@ -3,14 +3,17 @@
     "version": "1.0.0",
     "description": "A new discord game!",
     "main": "index.js",
+    "engines": {
+        "node": ">=22.0.0"
+    },
     "scripts": {
         "script": "npm run build && node build/run_script.js",
         "start": "node build/index.js",
         "deploy-commands": "npm run build && node build/deploy-commands",
-        "dev": "npm run build && nodemon build/index.js",
         "clean": "rimraf build",
         "build": "npm run clean && tsc",
-        "pretty": "prettier --write \"./**/*.{ts}\""
+        "pretty": "prettier --write \"src/**/*.{ts,js,jsx,json,md}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,js,jsx,json,md}\""
     },
     "author": "busybeaver",
     "license": "ISC",
@@ -22,14 +25,12 @@
         "fuse.js": "^7.1.0",
         "googleapis": "^140.0.0",
         "node-cron": "^4.1.1",
-        "papaparse": "^5.4.1",
         "prompt-sync": "^4.2.0"
     },
     "devDependencies": {
         "@types/glob": "^8.1.0",
         "@types/node": "^20.14.8",
         "@types/prompt-sync": "^4.2.3",
-        "nodemon": "^3.1.4",
         "prettier": "3.3.2",
         "rimraf": "^6.0.1",
         "typescript": "^5.5.2"

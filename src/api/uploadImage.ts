@@ -10,7 +10,7 @@ import prompt from 'prompt-sync';
 
 dotenv.config();
 
-const IMAGE_DIR = './data/Anicards';
+const IMAGE_DIR = './data/images';
 
 const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
 

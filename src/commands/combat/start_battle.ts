@@ -1,8 +1,15 @@
 import { ActionRowBuilder, ButtonBuilder, SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonStyle, Client, CommandInteraction, EmbedBuilder } from 'discord.js';
+import {
+    ButtonInteraction,
+    ButtonStyle,
+    Client,
+    CommandInteraction,
+    EmbedBuilder,
+    MessageComponentInteraction,
+} from 'discord.js';
 
 import CombatBase from './combat_base';
-import { Battle, BattleState, Combatant, Move } from './combat_util';
+import { Battle, BattleState, Combatant, CombatantAction, Move } from './combat_util';
 
 class StartBattle extends CombatBase {
     constructor() {
@@ -12,7 +19,6 @@ class StartBattle extends CombatBase {
                 .setDescription('Challenge someone to a battle!'),
         );
     }
-
     override async execute(interaction: CommandInteraction, client: Client): Promise<void> {
         const declineButton = new ButtonBuilder()
             .setCustomId('decline')
@@ -29,40 +35,58 @@ class StartBattle extends CombatBase {
             acceptButton,
         );
 
+        // Initial public challenge message
         const message = await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle(interaction.user.username + ' challenges you to a battle!')
+                    .setTitle(`${interaction.user.username} challenges you to a battle!`)
                     .setDescription('Do you accept?'),
-                // .setImage(`https://res.cloudinary.com/anicardimages/image/upload/images/${card.id}`)
             ],
             components: [row],
         });
 
+        // Collector logic
         const startCollector = () => {
-            let oppUUID: string;
+            let oppInteraction: MessageComponentInteraction | null = null;
 
             const collector = message.createMessageComponentCollector({
-                time: 60_000, // 60 s from creation
+                time: 60_000, // 60s timeout
             });
 
             collector.on('collect', async (collectorInteraction) => {
                 if (collectorInteraction.customId === 'accept') {
-                    oppUUID = collectorInteraction.user.id;
+                    oppInteraction = collectorInteraction;
+
+                    // Instead of deferUpdate, reply ephemerally to acknowledge
+                    await collectorInteraction.reply({
+                        content: 'You accepted the challenge! Preparing battle…',
+                        ephemeral: true,
+                    });
                 }
 
-                // kill collector
+                if (collectorInteraction.customId === 'decline') {
+                    await collectorInteraction.reply({
+                        content: 'You declined the challenge.',
+                        ephemeral: true,
+                    });
+                }
+
                 collector.stop();
             });
 
-            collector.on('end', () => {
+            collector.on('end', async () => {
                 declineButton.setDisabled(true);
                 acceptButton.setDisabled(true);
-                // Sets the row to be disabled
-                message.edit({ components: [row] }).catch(() => {});
 
-                if (oppUUID) {
-                    this.startBattle(interaction.user.id, oppUUID);
+                // Disable buttons in the public challenge message
+                await message.edit({ components: [row] }).catch(() => {});
+
+                if (oppInteraction) {
+                    // Pass both interactions into battle
+                    this.startBattle(
+                        interaction, // CommandInteraction
+                        oppInteraction, // MessageComponentInteraction
+                    );
                 }
             });
         };
@@ -91,116 +115,169 @@ class StartBattle extends CombatBase {
         ];
     }
 
-    private async getUserMoves(
-        userUUID: string,
-        combatants: Combatant[],
-    ): Promise<[string, Move][]> {
-        const moveList = [];
+    private async getActionForCombatant(
+        interaction: CommandInteraction | ButtonInteraction | MessageComponentInteraction,
+        combatant: Combatant,
+        opponentCombatants: Combatant[],
+    ): Promise<CombatantAction> {
+        // Step 1: ask for a move
+        const chosenMove = await new Promise<Move>((resolve) => {
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+                ...combatant.moves.map((m, idx) =>
+                    new ButtonBuilder()
+                        .setCustomId(`${idx}`)
+                        .setLabel(m.name)
+                        .setStyle(ButtonStyle.Primary),
+                ),
+            );
 
-        for (const combatant of combatants) {
-            const moveOptions = combatant.moves;
+            interaction.followUp({
+                content: `Choose a move for **${combatant.name}**:`,
+                components: [row],
+                ephemeral: true,
+            });
 
-            let message = `Choose a move for **${combatant.name}**:\n`;
-            for (let i = 0; i < moveOptions.length; i++) {
-                message += `${i}: ${moveOptions[i].name}`;
-            }
+            const collector = interaction.channel!.createMessageComponentCollector({
+                time: 30_000,
+                filter: (i) => i.user.id === interaction.user.id,
+            });
 
-            // send msg to user
+            collector.on('collect', async (i) => {
+                const idx = parseInt(i.customId);
+                await i.deferUpdate();
+                resolve(combatant.moves[idx]); // ✅ resolve the move
+                collector.stop();
+            });
+        });
 
-            moveList.push([combatant.uuid, moveList[0]]);
-        }
+        // Step 2: once we have a move, ask for a target
+        const chosenTarget = await new Promise<Combatant>((resolve) => {
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+                ...opponentCombatants.map((target) =>
+                    new ButtonBuilder()
+                        .setCustomId(`${target.uuid}`)
+                        .setLabel(target.name)
+                        .setStyle(ButtonStyle.Secondary),
+                ),
+            );
 
-        return moveList;
+            interaction.followUp({
+                content: `Choose a target for **${combatant.name}**’s **${chosenMove.name}**:`,
+                components: [row],
+                ephemeral: true,
+            });
+
+            const collector = interaction.channel!.createMessageComponentCollector({
+                time: 30_000,
+                filter: (i) => i.user.id === interaction.user.id,
+            });
+
+            collector.on('collect', async (i) => {
+                const targetUUID = i.customId;
+                await i.deferUpdate();
+                resolve(opponentCombatants.find((target) => target.uuid === targetUUID)!); // ✅ resolve target
+                collector.stop();
+            });
+        });
+
+        // Step 3: return the full action triple
+        return {
+            uuid: combatant.uuid,
+            move: chosenMove,
+            target: chosenTarget,
+        };
     }
 
-    private async getUserOpponents(
-        userUUID: string,
+    private async getUserActions(
+        interaction: CommandInteraction | ButtonInteraction | MessageComponentInteraction,
         userCombatants: Combatant[],
         opponentCombatants: Combatant[],
-    ): Promise<[string, Combatant][]> {
-        // technically not necessary since we should have alr filtered them...
-        const validTargets = opponentCombatants.filter((combatant) => combatant.isAlive());
-
-        const targetList = [];
+    ): Promise<[string, CombatantAction][]> {
+        const results: [string, CombatantAction][] = [];
 
         for (const combatant of userCombatants) {
-            let message = `Choose a target for **${combatant.name}**:\n`;
-            for (let i = 0; i < validTargets.length; i++) {
-                message += `${i}: ${validTargets[i].name}`;
-            }
-
-            // send msg to user
-
-            targetList.push([combatant.uuid, targetList[0]]);
+            const action = await this.getActionForCombatant(
+                interaction,
+                combatant,
+                opponentCombatants,
+            );
+            results.push([action.uuid, action]);
         }
 
-        return targetList;
+        return results;
     }
 
-    private async getAllMoves(
-        queue: Combatant[],
-        uuidA: string,
-        uuidB: string,
-    ): Promise<Map<string, Move>> {
-        const moveMap = new Map<string, Move>();
-
-        const [moveListA, moveListB] = await Promise.all([
-            this.getUserMoves(
-                uuidA,
-                queue.filter((combatant) => combatant.teamId === 'a'),
-            ),
-            this.getUserMoves(
-                uuidB,
-                queue.filter((combatant) => combatant.teamId === 'b'),
-            ),
-        ]);
-
-        moveListA.forEach(([uuid, move]) => moveMap.set(uuid, move));
-        moveListB.forEach(([uuid, move]) => moveMap.set(uuid, move));
-
-        return moveMap;
-    }
-
-    private async getAllTargets(
+    private async getAllActions(
         queue: Combatant[],
         battleState: BattleState,
-        uuidA: string,
-        uuidB: string,
-    ): Promise<Map<string, Combatant>> {
-        const targetMap = new Map<string, Combatant>();
+        interactionA: CommandInteraction,
+        interactionB: MessageComponentInteraction,
+    ): Promise<Map<string, CombatantAction>> {
+        const actionMap = new Map<string, CombatantAction>();
 
-        const [targetListA, targetListB] = await Promise.all([
-            this.getUserOpponents(
-                uuidA,
+        const [actionsA, actionsB] = await Promise.all([
+            this.getUserActions(
+                interactionA,
                 queue.filter((combatant) => combatant.teamId === 'a'),
                 battleState.teams.b.filter((combatant) => combatant.isAlive()),
             ),
-            this.getUserOpponents(
-                uuidB,
+            this.getUserActions(
+                interactionB,
                 queue.filter((combatant) => combatant.teamId === 'b'),
                 battleState.teams.a.filter((combatant) => combatant.isAlive()),
             ),
         ]);
 
-        targetListA.forEach(([uuid, target]) => targetMap.set(uuid, target));
-        targetListB.forEach(([uuid, target]) => targetMap.set(uuid, target));
+        for (const [uuid, action] of [...actionsA, ...actionsB]) {
+            actionMap.set(uuid, action);
+        }
 
-        return targetMap;
+        return actionMap;
     }
 
-    private async startBattle(uuidA: string, uuidB: string) {
-        // send ephemeral message to A and B for characters
-
-        // idk how i should go about this
-        // but essentially i should try to call both a and b at the same time
-        // only when i get both results, i create battlestate
-
-        // const teamA = await this.getInitialCharacters(uuidA);
-        // const teamB = await this.getInitialCharacters(uuidB);
-
+    private async startBattle(
+        interactionA: CommandInteraction,
+        interactionB: MessageComponentInteraction,
+    ) {
+        // This still broken
+        // Fix later
         const [teamA, teamB] = await Promise.all([
-            this.getInitialCharacters(uuidA),
-            this.getInitialCharacters(uuidB),
+            [
+                new Combatant({
+                    name: 'Zephyr',
+                    stats: { health: 8500, damage: 18, defense: 10, speed: 50, accuracy: 1 },
+                    teamId: 'a',
+                    moves: [
+                        {
+                            name: 'Copycat',
+                            type: 'normal',
+                            damage: 0,
+                            effects: ['copy'],
+                            target: 'single',
+                            copy: false,
+                            accuracy: 1.0,
+                        },
+                    ],
+                }),
+            ],
+            [
+                new Combatant({
+                    name: 'Zephyr',
+                    stats: { health: 8500, damage: 18, defense: 10, speed: 50, accuracy: 1 },
+                    teamId: 'a',
+                    moves: [
+                        {
+                            name: 'Copycat',
+                            type: 'normal',
+                            damage: 0,
+                            effects: ['copy'],
+                            target: 'single',
+                            copy: false,
+                            accuracy: 1.0,
+                        },
+                    ],
+                }),
+            ],
         ]);
 
         let playBattle = true;
@@ -214,9 +291,8 @@ class StartBattle extends CombatBase {
         const battle = new Battle(battleState, uponWinning);
 
         while (playBattle) {
-            battle.processTurn(
-                (queue) => this.getAllMoves(queue, uuidA, uuidB),
-                (queue) => this.getAllTargets(queue, battleState, uuidA, uuidB),
+            battle.processTurn((queue) =>
+                this.getAllActions(queue, battleState, interactionA, interactionB),
             );
         }
     }

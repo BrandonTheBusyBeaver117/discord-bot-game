@@ -1,4 +1,4 @@
-import { Battle, BattleState, Combatant, Move } from './combat_util';
+import { Battle, BattleState, Combatant, CombatantAction, Move } from './combat_util';
 import { combatants } from './simulator_constants';
 
 const runSimulation = () => {
@@ -52,11 +52,29 @@ const runSimulation = () => {
     while (stop == false) {
         console.log('turn ' + turn);
 
+        // I'm too lazy to refactor, if this causes significant performance problems in the future,
+        // just make it so that we have a big for loop and just choose our targets/moves at the same time
+
+        const actionSupplier = (queue: Combatant[]): Map<string, CombatantAction> => {
+            const moveMap = moveMapSupplier(queue);
+            const opponentMap = opponentMapSupplier(queue);
+
+            const actionMap = new Map<string, CombatantAction>();
+
+            // Basically, it gets the move map and opponent map
+            // Then justs maps each both to a character action
+            for (const combatant of queue) {
+                actionMap.set(combatant.uuid, {
+                    uuid: combatant.uuid,
+                    move: moveMap.get(combatant.uuid),
+                    target: opponentMap.get(combatant.uuid),
+                });
+            }
+            return;
+        };
+
         // we have to use promise.resolve bc processTurn expects an async func
-        battle.processTurn(
-            (queue) => Promise.resolve(moveMapSupplier(queue)),
-            (queue) => Promise.resolve(opponentMapSupplier(queue)),
-        );
+        battle.processTurn((queue) => Promise.resolve(actionSupplier(queue)));
         turn++;
     }
     console.log('we done');

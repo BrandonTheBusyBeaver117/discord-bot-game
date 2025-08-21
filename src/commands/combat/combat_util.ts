@@ -3,6 +3,12 @@ import { supabase } from '../..';
 import { getEffect } from './effects/effects';
 import { StatusEffect } from './effects/status_effect_base';
 
+export interface CombatantAction {
+    uuid: string;
+    move: Move;
+    target: Combatant;
+}
+
 export interface Stats {
     health: number;
     speed: number;
@@ -223,8 +229,7 @@ export class Battle {
     }
 
     async processTurn(
-        moveMapSupplier: (combatants: Combatant[]) => Promise<Map<string, Move>>,
-        opponentMapSupplier: (combatants: Combatant[]) => Promise<Map<string, Combatant>>,
+        infoSupplier: (combatants: Combatant[]) => Promise<Map<string, CombatantAction>>,
     ) {
         // Turn Starts
         // Resetting active combatants
@@ -241,8 +246,9 @@ export class Battle {
         // ========================================================
         // Select Moves
 
-        const moveMap: Map<string, Move> = await moveMapSupplier(queue);
-        const opponentMap: Map<string, Combatant> = await opponentMapSupplier(queue);
+        const decisionMap = await infoSupplier(queue);
+        // const moveMap: Map<string, Move> = await moveMapSupplier(queue);
+        // const opponentMap: Map<string, Combatant> = await opponentMapSupplier(queue);
 
         // ========================================================
         // Execute Moves
@@ -254,12 +260,9 @@ export class Battle {
 
             combatant.statusEffects.forEach((effect) => effect.tick('beforeMove'));
 
-            executeMove(
-                moveMap.get(combatant.uuid),
-                combatant,
-                opponentMap.get(combatant.uuid),
-                this.battleState,
-            );
+            const decision = decisionMap.get(combatant.uuid);
+
+            executeMove(decision.move, combatant, decision.target, this.battleState);
 
             combatant.statusEffects.forEach((effect) => effect.tick('afterMove'));
 

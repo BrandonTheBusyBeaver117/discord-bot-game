@@ -3,7 +3,7 @@ import path from 'path';
 import { getCache, getCard, loadCards } from '../get_cards';
 import Fuse from 'fuse.js';
 
-const IMAGE_DIR = './data/Anicards';
+const IMAGE_DIR = './data/images';
 
 export async function checkDiff() {
     await loadCards();

@@ -1,7 +1,7 @@
 import { Battle, BattleState, Combatant, CombatantAction, Move } from './combat_util';
 import { combatants } from './simulator_constants';
 
-const runSimulation = () => {
+export const runSimulation = () => {
     console.log('starting');
     const teamA = combatants.filter((combatant) => combatant.teamId === 'a');
     const teamB = combatants.filter((combatant) => combatant.teamId === 'b');
@@ -79,5 +79,3 @@ const runSimulation = () => {
     }
     console.log('we done');
 };
-
-export default runSimulation;

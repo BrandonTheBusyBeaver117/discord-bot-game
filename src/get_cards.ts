@@ -5,6 +5,7 @@ export type Card = {
     name: string;
     rarity: string;
     description: string;
+    number: number;
     //   moves: {
     //     id: string;
     //     name: string;
@@ -21,7 +22,9 @@ const cardCache = new Map<string, Card>();
 const cardsByRarityCache = new Map<string, Card[]>();
 
 export async function loadCards() {
-    const { data, error } = await supabase.from('cards').select('id, name, rarity, description');
+    const { data, error } = await supabase
+        .from('cards')
+        .select('id, name, rarity, description, number');
     if (error) {
         console.error('Failed to load cards:', error);
         return;
@@ -36,11 +39,14 @@ export async function loadCards() {
     cardsByRarityCache.set('legendary', []);
 
     for (const card of data) {
-        // use id or name as key
+        // use uuid, name, or user-facing number as key
         cardCache.set(card.id, card);
-
+        cardCache.set(card.number.toString(), card);
         // This is ok because we can still return a correctly capitalized name from the card itself
         cardCache.set(card.name.toLowerCase().trim(), card);
+
+        console.log(typeof card.number);
+        console.log(card.number + ': ' + card.name);
 
         // This shouldn't happen
         if (!cardsByRarityCache.has(card.rarity)) {
@@ -58,8 +64,12 @@ export async function loadCards() {
  * @param identifier Either name or uuid of card
  * @returns The card itself
  */
-export function getCard(identifier: string): Card | null {
-    identifier = identifier.toLowerCase().trim();
+export function getCard(identifier: string | number): Card | null {
+    if (typeof identifier === 'number') {
+        identifier = identifier.toString();
+    } else {
+        identifier = identifier.toLowerCase().trim();
+    }
 
     if (!cardCache.has(identifier)) {
         // console.log("BIG ERROR - HOW COME THIS DOESN'T EXIST");

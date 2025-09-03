@@ -234,82 +234,6 @@ class StartBattle extends CombatBase {
         });
     }
 
-    // private async getActionForCombatant(
-    //     interaction: CommandInteraction | ButtonInteraction | MessageComponentInteraction,
-    //     combatant: Combatant,
-    //     opponentCombatants: Combatant[],
-    // ): Promise<CombatantAction> {
-    //     console.log('we are got an action for each char');
-
-    //     // Step 1: ask for a move
-    //     const chosenMove = await new Promise<Move>(async (resolve) => {
-    //         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    //             ...combatant.moves.map((m, idx) =>
-    //                 new ButtonBuilder()
-    //                     .setCustomId(`${idx}`)
-    //                     .setLabel(m.name)
-    //                     .setStyle(ButtonStyle.Primary),
-    //             ),
-    //         );
-
-    //         const followupMessage = await interaction.followUp({
-    //             content: `Choose a move for **${combatant.name}**:`,
-    //             components: [row],
-    //             ephemeral: true,
-    //             fetchReply: true,
-    //         });
-
-    //         const collector = (followupMessage as Message).createMessageComponentCollector({
-    //             time: 30_000,
-    //             filter: (i) => i.user.id === interaction.user.id,
-    //         });
-
-    //         collector.on('collect', async (i) => {
-    //             const idx = parseInt(i.customId);
-    //             await i.deferUpdate();
-    //             resolve(combatant.moves[idx]); // ✅ resolve the move
-    //             collector.stop();
-    //         });
-    //     });
-
-    //     // Step 2: once we have a move, ask for a target
-    //     const chosenTarget = await new Promise<Combatant>(async (resolve) => {
-    //         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    //             ...opponentCombatants.map((target) =>
-    //                 new ButtonBuilder()
-    //                     .setCustomId(`${target.uuid}`)
-    //                     .setLabel(target.name)
-    //                     .setStyle(ButtonStyle.Secondary),
-    //             ),
-    //         );
-
-    //         const followupMessage = await interaction.followUp({
-    //             content: `Choose a target for **${combatant.name}**’s **${chosenMove.name}**:`,
-    //             components: [row],
-    //             ephemeral: true,
-    //         });
-
-    //         const collector = (followupMessage as Message).createMessageComponentCollector({
-    //             time: 30_000,
-    //             filter: (i) => i.user.id === interaction.user.id,
-    //         });
-
-    //         collector.on('collect', async (i) => {
-    //             const targetUUID = i.customId;
-    //             await i.deferUpdate();
-    //             resolve(opponentCombatants.find((target) => target.uuid === targetUUID)!); // ✅ resolve target
-    //             collector.stop();
-    //         });
-    //     });
-
-    //     // Step 3: return the full action triple
-    //     return {
-    //         uuid: combatant.uuid,
-    //         move: chosenMove,
-    //         target: chosenTarget,
-    //     };
-    // }
-
     private async getUserActions(
         interaction: CommandInteraction | ButtonInteraction | MessageComponentInteraction,
         userCombatants: Combatant[],
@@ -473,6 +397,8 @@ class StartBattle extends CombatBase {
                 },
             );
         }
+
+        console.log('battle finished');
     }
 }
 

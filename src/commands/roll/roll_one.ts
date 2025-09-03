@@ -3,11 +3,11 @@ import { CommandInteraction } from 'discord.js';
 
 import { getCurrentRandomBanner } from '../../banner';
 
-import RollCommand from './roll_base';
 import { pullCards, addCharacters } from './roll_util';
 import { fetchCards } from '../inventory/inventory_util';
+import RollBase from './roll_base';
 
-class RollOneCommand extends RollCommand {
+class RollOneCommand extends RollBase {
     constructor() {
         super(new SlashCommandBuilder().setName('roll').setDescription('Get a random card!'));
     }

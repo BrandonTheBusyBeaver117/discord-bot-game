@@ -230,6 +230,7 @@ export class Battle {
 
     async processTurn(
         infoSupplier: (combatants: Combatant[]) => Promise<Map<string, CombatantAction>>,
+        messageWriter: (message: string) => void,
     ) {
         // Turn Starts
         // Resetting active combatants
@@ -254,6 +255,9 @@ export class Battle {
         // Execute Moves
 
         console.log('execution');
+
+        const moveMessages = [];
+
         while (queue.length > 0) {
             // Finds the fastest combatant
             const combatant = queue[0];
@@ -262,7 +266,10 @@ export class Battle {
 
             const decision = decisionMap.get(combatant.uuid);
 
-            executeMove(decision.move, combatant, decision.target, this.battleState);
+            // This is kinda funny, but we can accumulate all the messages before writing them for real
+            executeMove(decision.move, combatant, decision.target, this.battleState, (message) => {
+                moveMessages.push(message);
+            });
 
             combatant.statusEffects.forEach((effect) => effect.tick('afterMove'));
 
@@ -276,6 +283,8 @@ export class Battle {
             console.log(queue.map((combatant) => combatant.uuid));
         }
 
+        moveMessages.push('\n====================');
+
         // ========================================================
         // End of turn
 
@@ -286,15 +295,18 @@ export class Battle {
             combatant.endOfTurn();
         });
 
-        console.log('Team a:');
+        moveMessages.push('Team A:');
+
         this.battleState.teams.a.forEach((combatant) => {
-            console.log(`${combatant.name} health: ${combatant.currentStats.health}`);
+            moveMessages.push(`${combatant.name} health: ${combatant.currentStats.health}`);
         });
 
-        console.log('\nTeam b:');
+        moveMessages.push('\nTeam B:');
         this.battleState.teams.b.forEach((combatant) => {
-            console.log(`${combatant.name} health: ${combatant.currentStats.health}`);
+            moveMessages.push(`${combatant.name} health: ${combatant.currentStats.health}`);
         });
+
+        messageWriter(moveMessages.join('\n'));
 
         const winningTeam = this.checkWinningTeam();
         if (winningTeam) {
@@ -340,13 +352,25 @@ export class Battle {
     getMoves() {}
 }
 
-function executeMove(move: Move, user: Combatant, opponent: Combatant, battleState: BattleState) {
+function executeMove(
+    move: Move,
+    user: Combatant,
+    opponent: Combatant,
+    battleState: BattleState,
+    messageWriter: (message: string) => void,
+) {
     // this is kinda scuffed ngl
 
     switch (move.target) {
         case 'global':
             battleState.teams[opponent.teamId].forEach((opponent) => {
-                executeMove({ ...move, target: 'single' }, user, opponent, battleState);
+                executeMove(
+                    { ...move, target: 'single' },
+                    user,
+                    opponent,
+                    battleState,
+                    messageWriter,
+                );
             });
 
             break;
@@ -361,13 +385,14 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
                     user,
                     opponent,
                     battleState,
+                    messageWriter,
                 );
             }
             break;
 
         case 'single':
             if (Math.random() > move.accuracy * user.currentStats.accuracy) {
-                console.log(`${user.name} missed!`);
+                messageWriter(`${user.name} missed!`);
                 return;
             }
 
@@ -375,7 +400,7 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
                 applyStatusEffect(effect, user, opponent, battleState);
             }
 
-            console.log(
+            messageWriter(
                 user.name +
                     ' uses ' +
                     move.name +
@@ -383,7 +408,7 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
                     opponent.name +
                     ' it does ' +
                     move.damage +
-                    'damage',
+                    ' damage',
             );
 
             opponent.addToStat('health', -move.damage);
@@ -397,10 +422,10 @@ function executeMove(move: Move, user: Combatant, opponent: Combatant, battleSta
             // If the opponent can act, can copy, and the current move isn't a copy, then copy
             // imo this should be counter but wtv
             if (opponent.canAct() && opponent.flags.canCopy && move.copy === false) {
-                executeMove({ ...move, copy: true }, opponent, user, battleState);
+                executeMove({ ...move, copy: true }, opponent, user, battleState, messageWriter);
             }
             break;
         default:
-            console.log('what the');
+            messageWriter('what the');
     }
 }

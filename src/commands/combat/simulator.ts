@@ -74,7 +74,10 @@ export const runSimulation = () => {
         };
 
         // we have to use promise.resolve bc processTurn expects an async func
-        battle.processTurn((queue) => Promise.resolve(actionSupplier(queue)));
+        battle.processTurn(
+            (queue) => Promise.resolve(actionSupplier(queue)),
+            (message) => console.log(message),
+        );
         turn++;
     }
     console.log('we done');

@@ -44,8 +44,8 @@ client.once('ready', async (readyClient) => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) {
-        console.error('Interaction is not a command');
+    if (!interaction.isCommand() && !interaction.isAutocomplete()) {
+        console.error('Interaction is neither a command nor autocomplete');
         return;
     }
 
@@ -65,9 +65,23 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
-        command.runCommand(interaction, client);
+        if (interaction.isAutocomplete()) {
+            await command.autocomplete(interaction);
+            return;
+        }
+
+        if (interaction.isCommand()) {
+            await command.runCommand(interaction, client);
+            return;
+        }
     } catch (error) {
         console.error(error);
+
+        // yea i have no clue what to output if your autocomplete fails lmao
+        if (interaction.isAutocomplete()) {
+            return;
+        }
+
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({
                 content: 'There was an error while executing this command!',

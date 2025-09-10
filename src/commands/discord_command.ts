@@ -1,4 +1,5 @@
 import {
+    AutocompleteInteraction,
     Client,
     CommandInteraction,
     SlashCommandBuilder,
@@ -27,6 +28,8 @@ class DiscordCommand {
             await supabase.from('users').insert([{ id: interaction.user.id, gems: 100 }]);
         }
     }
+
+    async autocomplete(interaction: AutocompleteInteraction): Promise<void> {}
 
     async preExecute(interaction: CommandInteraction): Promise<void> {
         await this.createUser(interaction);

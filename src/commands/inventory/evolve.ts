@@ -1,9 +1,23 @@
 import { ActionRowBuilder, ButtonBuilder, SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonStyle, ChatInputCommandInteraction, Message } from 'discord.js';
+import {
+    AutocompleteInteraction,
+    ButtonStyle,
+    ChatInputCommandInteraction,
+    Message,
+} from 'discord.js';
 
 import { supabase } from '../..';
 import InventoryBase from './inventory_base';
 import { Card, getCard } from '../../get_cards';
+
+interface CachedInventory {
+    cardNames: string[];
+    timestamp: number;
+}
+
+// Map cache: userId → CachedInventory
+const inventoryCache = new Map<string, CachedInventory>();
+const CACHE_TTL = 30_000; // 30 seconds
 
 class Evolve extends InventoryBase {
     constructor() {
@@ -13,19 +27,71 @@ class Evolve extends InventoryBase {
                 .setDescription(
                     'Evolve a character. You need 4 cards to evolve. View character IDs via /inventory_by_id',
                 )
+                .addStringOption(
+                    (option) =>
+                        option
+                            .setName('name')
+                            .setDescription('Card name')
+                            .setAutocomplete(true)
+                            .setRequired(true), // <-- just flag it, no 1000 choices here
+                ),
+        );
+    }
 
-                .addIntegerOption((option) => {
-                    return option.setName('id').setDescription('4 digit id code').setRequired(true);
-                }),
+    // 🔹 AUTOCOMPLETE HANDLER
+    override async autocomplete(interaction: AutocompleteInteraction) {
+        const userId = interaction.user.id;
+        const focusedValue = interaction.options.getFocused()?.toLowerCase() || '';
+
+        let cached = inventoryCache.get(userId);
+
+        // Fetch inventory if cache is empty or expired
+        if (!cached || Date.now() - cached.timestamp > CACHE_TTL) {
+            const { data, error } = await supabase
+                .from('inventory')
+                .select('card_id')
+                .eq('user_id', userId);
+
+            if (error) {
+                console.error('Error fetching inventory:', error);
+                await interaction.respond([]);
+                return;
+            }
+
+            cached = { cardNames: data.map((d) => getCard(d.card_id).name), timestamp: Date.now() };
+            inventoryCache.set(userId, cached);
+        }
+
+        // --- Hybrid filtering ---
+        const startsWithMatches = cached.cardNames.filter((name) =>
+            name.toLowerCase().startsWith(focusedValue),
+        );
+
+        const includesMatches = cached.cardNames.filter(
+            (name) =>
+                !name.toLowerCase().startsWith(focusedValue) &&
+                name.toLowerCase().includes(focusedValue),
+        );
+
+        const filtered = [...startsWithMatches, ...includesMatches].slice(0, 25);
+
+        // Respond to Discord
+        await interaction.respond(
+            filtered.map((characterName) => ({ name: characterName, value: characterName })),
         );
     }
 
     override async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction immediately
 
-        const cardNumber = interaction.options.getInteger('id');
+        const cardName = interaction.options.getString('name');
 
-        const baseCard = getCard(cardNumber);
+        const baseCard = getCard(cardName);
+
+        if (baseCard) {
+            await interaction.editReply(`"${cardName}" does not exist within your inventory`);
+            return;
+        }
 
         const { data: evoData, error: evoerror } = await supabase
             .from('evolutions')

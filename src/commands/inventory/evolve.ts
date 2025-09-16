@@ -101,9 +101,15 @@ class Evolve extends InvalidateInventoryCacheBase {
         }
 
         const { data: evoData, error: evoerror } = await supabase
-            .from('cards')
+            .from('evolutions')
             .select('evolution_card_id')
             .eq('card_id', baseCard.id);
+
+        if (evoerror) {
+            console.log(evoerror);
+            await interaction.editReply(`Something went wrong when fetching potential evolutions`);
+            return;
+        }
 
         const evoCards = evoData.map((data) => getCard(data.evolution_card_id));
 

@@ -4,7 +4,7 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { getCurrentRandomBanner } from '../../banner';
 
 import { pullCards, addCharacters } from './roll_util';
-import { fetchCards } from '../inventory/inventory_util';
+import { fetchUserCards } from '../inventory/inventory_util';
 import RollBase from './roll_base';
 
 type EmbedItem = {
@@ -64,7 +64,10 @@ class RollManyCommand extends RollBase {
         const frequency = pullCards(getCurrentRandomBanner(), numCards);
         const updatedGems = await addCharacters(interaction.user.id, frequency, 5 * numCards);
 
-        const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));
+        // const updatedInventory = await fetchUserCards(
+        //     interaction.user.id,
+        //     Array.from(frequency.keys()).map((card) => card.id),
+        // );
 
         const fieldsByRarity = this.createRarityMap();
 

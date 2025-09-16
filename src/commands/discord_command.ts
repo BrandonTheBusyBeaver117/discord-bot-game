@@ -35,12 +35,20 @@ class DiscordCommand {
         await this.createUser(interaction);
     }
 
-    async execute(interaction: CommandInteraction, client: Client): Promise<void> {}
+    // Any sort of cleanup or anything
+    async onSuccess(interaction: CommandInteraction): Promise<void> {}
+
+    // Basically, only need to return true on a successful execution
+    async execute(interaction: CommandInteraction, client: Client): Promise<void | boolean> {}
 
     async runCommand(interaction: CommandInteraction, client: Client): Promise<void> {
         await this.preExecute(interaction);
 
-        await this.execute(interaction, client);
+        const success = await this.execute(interaction, client);
+
+        if (success) {
+            await this.onSuccess(interaction);
+        }
     }
 }
 

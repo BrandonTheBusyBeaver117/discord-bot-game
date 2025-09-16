@@ -4,7 +4,7 @@ import { CommandInteraction } from 'discord.js';
 import { getCurrentRandomBanner } from '../../banner';
 
 import { pullCards, addCharacters } from './roll_util';
-import { fetchCards } from '../inventory/inventory_util';
+import { fetchUserCards } from '../inventory/inventory_util';
 import RollBase from './roll_base';
 
 class RollOneCommand extends RollBase {
@@ -16,7 +16,10 @@ class RollOneCommand extends RollBase {
         const frequency = pullCards(getCurrentRandomBanner(), 1);
         const updatedGems = await addCharacters(interaction.user.id, frequency, 5);
 
-        const updatedInventory = await fetchCards(interaction, Array.from(frequency.keys()));
+        const updatedInventory = await fetchUserCards(
+            interaction.user.id,
+            Array.from(frequency.keys()).map((card) => card.id),
+        );
 
         // Making sure we only pulled a single card...
         if (updatedInventory.length !== 1) {

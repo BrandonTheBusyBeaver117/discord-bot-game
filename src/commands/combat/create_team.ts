@@ -57,7 +57,14 @@ class CreateTeam extends CombatBase {
             return;
         }
 
-        const user_card_ids = (await fetchInventory(interaction)).map((item) => item.card.id);
+        const inventory = await fetchInventory(interaction.user.id);
+
+        if (!inventory) {
+            await interaction.editReply(`Failed to read inventory`);
+            return;
+        }
+
+        const user_card_ids = inventory.map((item) => item.card.id);
 
         // const tempTeam = new Map<string, Card>();
 

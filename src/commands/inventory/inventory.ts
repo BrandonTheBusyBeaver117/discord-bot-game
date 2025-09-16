@@ -30,7 +30,12 @@ class InventoryCommand extends InventoryBase {
     override async execute(interaction: CommandInteraction, client: Client): Promise<void> {
         await interaction.deferReply({ ephemeral: false });
         // Build the inventory message
-        const inventory = await fetchInventory(interaction);
+        const inventory = await fetchInventory(interaction.user.id);
+
+        if (!inventory) {
+            interaction.editReply('Failed to fetch inventory');
+            return;
+        }
 
         let currentPage = 0;
 
